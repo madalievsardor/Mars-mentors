@@ -13,8 +13,6 @@ services:
     buildCommand: pnpm install && pnpm build && pnpm db:migrate && pnpm db:generate
     startCommand: node dist/main
     envVars:
-      - key: PORT
-        value: 3001
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
@@ -23,9 +21,11 @@ services:
           property: connectionString
       - key: MARS_API_BASE_URL
         value: https://api.marsit.uz/api/v1
-      - key: MARS_PHONE
+      - key: JWT_SECRET
         sync: false
-      - key: MARS_PASSWORD
+      - key: DASHBOARD_PASSWORD
+        sync: false
+      - key: MARS_COOKIES_JSON
         sync: false
       - key: TELEGRAM_BOT_TOKEN
         sync: false
