@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { X, Clock, BookOpen, Users, TrendingUp } from 'lucide-react'
 import {
   LineChart,
@@ -51,6 +52,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 }
 
 export default function MentorModal({ mentor, onClose }: MentorModalProps) {
+  const { t } = useTranslation()
   const { data: history, isLoading } = useMentorHistory(mentor.id)
   const dialogRef = useRef<HTMLDialogElement>(null)
 
@@ -94,7 +96,7 @@ export default function MentorModal({ mentor, onClose }: MentorModalProps) {
             <button
               onClick={onClose}
               className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-slate-400 hover:text-slate-200 transition-colors"
-              aria-label="Yopish"
+              aria-label={t('modal.close')}
             >
               <X size={16} />
             </button>
@@ -105,13 +107,13 @@ export default function MentorModal({ mentor, onClose }: MentorModalProps) {
         <div className="grid grid-cols-2 gap-3 p-6 pb-0">
           <div className="bg-violet-500/[0.08] border border-violet-500/20 rounded-2xl p-4 text-center">
             <p className="text-violet-400 font-bold text-3xl">{mentor.groupCount}</p>
-            <p className="text-slate-500 text-xs mt-1.5">Guruhlar soni</p>
+            <p className="text-slate-500 text-xs mt-1.5">{t('modal.groupCount')}</p>
           </div>
           <div className={`${isOverloaded ? 'bg-red-500/[0.08] border border-red-500/20' : 'bg-emerald-500/[0.08] border border-emerald-500/20'} rounded-2xl p-4 text-center`}>
             <p className={`font-bold text-3xl ${isOverloaded ? 'text-red-400' : 'text-emerald-400'}`}>
               {mentor.studentCount}
             </p>
-            <p className="text-slate-500 text-xs mt-1.5">O'quvchilar soni</p>
+            <p className="text-slate-500 text-xs mt-1.5">{t('modal.studentCount')}</p>
           </div>
         </div>
 
@@ -119,7 +121,7 @@ export default function MentorModal({ mentor, onClose }: MentorModalProps) {
         <div className="p-6">
           <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
             <BookOpen size={14} className="text-indigo-400" />
-            Guruhlar ro'yxati
+            {t('modal.groupList')}
           </h4>
           {mentor.groups && mentor.groups.length > 0 ? (
             <div className="space-y-2">
@@ -134,24 +136,39 @@ export default function MentorModal({ mentor, onClose }: MentorModalProps) {
                     </div>
                     <div className="min-w-0">
                       <p className="text-slate-200 text-sm font-medium truncate">{group.name}</p>
-                      <p className="text-slate-600 text-xs">{group.category}</p>
+                      <p className="text-slate-600 text-xs">
+                        {typeof group.category === 'string'
+                          ? group.category
+                          : (group.category as unknown as { name?: string })?.name ?? ''}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4 flex-shrink-0 ml-3">
-                    <span className="flex items-center gap-1.5 text-slate-500 text-xs">
-                      <Clock size={11} />
-                      {group.time}
-                    </span>
-                    <span className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
-                      <Users size={11} />
-                      {group.studentCount}
-                    </span>
+                    {(() => {
+                      const raw = group as unknown as Record<string, unknown>
+                      const time = group.time || (raw['lesson_start_time'] as string) || ''
+                      const count = group.studentCount ?? (raw['students_number'] as number) ?? 0
+                      return (
+                        <>
+                          {time && (
+                            <span className="flex items-center gap-1.5 text-slate-500 text-xs">
+                              <Clock size={11} />
+                              {time}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1.5 text-slate-400 text-xs font-semibold">
+                            <Users size={11} />
+                            {count} o'quvchi
+                          </span>
+                        </>
+                      )
+                    })()}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-slate-600 text-sm text-center py-6">Guruhlar mavjud emas</p>
+            <p className="text-slate-600 text-sm text-center py-6">{t('modal.noGroups')}</p>
           )}
         </div>
 
@@ -159,7 +176,7 @@ export default function MentorModal({ mentor, onClose }: MentorModalProps) {
         <div className="px-6 pb-6">
           <h4 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
             <TrendingUp size={14} className="text-indigo-400" />
-            So'nggi 30 kun tendensiyasi
+            {t('modal.trend')}
           </h4>
           {isLoading ? (
             <LoadingSpinner size="sm" />
@@ -201,23 +218,23 @@ export default function MentorModal({ mentor, onClose }: MentorModalProps) {
               <div className="flex items-center gap-5 mt-3 justify-center">
                 <span className="flex items-center gap-2 text-xs text-slate-500">
                   <span className="w-4 h-0.5 bg-indigo-500 inline-block rounded-full" />
-                  O'quvchilar
+                  {t('modal.students')}
                 </span>
                 <span className="flex items-center gap-2 text-xs text-slate-500">
                   <span className="w-4 h-0.5 bg-violet-400 inline-block rounded-full" />
-                  Guruhlar
+                  {t('modal.groups')}
                 </span>
               </div>
             </div>
           ) : (
             <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-10 text-center">
-              <p className="text-slate-600 text-sm">Tarix ma'lumotlari mavjud emas</p>
+              <p className="text-slate-600 text-sm">{t('modal.noHistory')}</p>
             </div>
           )}
         </div>
       </div>
       <form method="dialog" className="modal-backdrop">
-        <button onClick={onClose}>yopish</button>
+        <button onClick={onClose}>{t('modal.closeBtn')}</button>
       </form>
     </dialog>
   )

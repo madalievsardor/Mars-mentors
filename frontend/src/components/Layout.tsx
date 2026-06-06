@@ -1,16 +1,17 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { LayoutDashboard, Users, Bell, LogOut, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface LayoutProps {
   onLogout: () => void
   userName: string | null
 }
 
-const navItems = [
-  { to: '/', label: 'Bosh sahifa', icon: LayoutDashboard },
-  { to: '/mentors', label: 'Mentorlar', icon: Users },
-  { to: '/notifications', label: 'Bildirishnomalar', icon: Bell },
+const LANGS = [
+  { code: 'uz', label: 'UZ' },
+  { code: 'ru', label: 'RU' },
+  { code: 'en', label: 'EN' },
 ]
 
 function SidebarContent({
@@ -22,7 +23,14 @@ function SidebarContent({
   onLogout: () => void
   userName: string | null
 }) {
+  const { t, i18n } = useTranslation()
   const [showLogout, setShowLogout] = useState(false)
+
+  const navItems = [
+    { to: '/', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { to: '/mentors', label: t('nav.mentors'), icon: Users },
+    { to: '/notifications', label: t('nav.notifications'), icon: Bell },
+  ]
 
   return (
     <>
@@ -44,7 +52,7 @@ function SidebarContent({
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-0.5">
         <p className="text-xs text-slate-600 uppercase tracking-widest mb-3 px-3 font-semibold">
-          Navigatsiya
+          {t('nav.navigation')}
         </p>
         {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink
@@ -68,6 +76,25 @@ function SidebarContent({
         ))}
       </nav>
 
+      {/* Language switcher */}
+      <div className="px-3 pb-2">
+        <div className="flex gap-1 bg-white/[0.03] border border-white/[0.06] rounded-xl p-1">
+          {LANGS.map(({ code, label }) => (
+            <button
+              key={code}
+              onClick={() => i18n.changeLanguage(code)}
+              className={
+                i18n.language === code
+                  ? 'flex-1 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition-all'
+                  : 'flex-1 py-1.5 rounded-lg text-xs font-semibold text-slate-500 hover:text-slate-300 hover:bg-white/[0.04] transition-all'
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* User */}
       <div className="p-3 border-t border-white/[0.06]">
         <button
@@ -79,7 +106,7 @@ function SidebarContent({
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-slate-200 text-sm font-medium truncate">{userName ?? 'Foydalanuvchi'}</p>
-            <p className="text-slate-600 text-xs">Mars akkaunt</p>
+            <p className="text-slate-600 text-xs">{t('nav.account')}</p>
           </div>
           <ChevronDown
             size={14}
@@ -93,7 +120,7 @@ function SidebarContent({
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-red-400 text-sm font-medium transition-colors mt-1"
           >
             <LogOut size={15} />
-            Chiqish
+            {t('nav.logout')}
           </button>
         )}
       </div>

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Search, SlidersHorizontal, TrendingDown, TrendingUp, Users, BookOpen, Minus } from 'lucide-react'
 import { useMentors } from '../hooks/useQueries'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -21,12 +22,8 @@ const tierConfig = {
     avatarText: 'text-emerald-400',
     countColor: 'text-emerald-400',
     progressClass: 'bg-gradient-to-r from-emerald-500 to-teal-500',
-    badge: (
-      <span className="flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-        <TrendingUp size={9} />
-        Yaxshi
-      </span>
-    ),
+    badgeClass: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25',
+    Icon: TrendingUp,
   },
   average: {
     cardClass: 'mentor-card-average',
@@ -34,12 +31,8 @@ const tierConfig = {
     avatarText: 'text-amber-400',
     countColor: 'text-amber-400',
     progressClass: 'bg-gradient-to-r from-amber-500 to-orange-500',
-    badge: (
-      <span className="flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25">
-        <Minus size={9} />
-        O'rtacha
-      </span>
-    ),
+    badgeClass: 'bg-amber-500/15 text-amber-400 border border-amber-500/25',
+    Icon: Minus,
   },
   decreased: {
     cardClass: 'mentor-card-overloaded',
@@ -47,12 +40,8 @@ const tierConfig = {
     avatarText: 'text-red-400',
     countColor: 'text-red-400',
     progressClass: 'bg-gradient-to-r from-red-500 to-rose-500',
-    badge: (
-      <span className="flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/25">
-        <TrendingDown size={9} />
-        Kamaydi
-      </span>
-    ),
+    badgeClass: 'bg-red-500/15 text-red-400 border border-red-500/25',
+    Icon: TrendingDown,
   },
 }
 
@@ -70,13 +59,6 @@ const gradeBadgeMap: Record<MentorGrade, string> = {
 
 type SortOption = 'students-desc' | 'students-asc' | 'name' | 'groups-desc'
 
-const sortOptions: { value: SortOption; label: string }[] = [
-  { value: 'students-desc', label: "O'quvchilar (ko'p→kam)" },
-  { value: 'students-asc', label: "O'quvchilar (kam→ko'p)" },
-  { value: 'groups-desc', label: "Guruhlar (ko'p→kam)" },
-  { value: 'name', label: "Ism bo'yicha (A–Z)" },
-]
-
 function sortMentors(mentors: Mentor[], sort: SortOption): Mentor[] {
   return [...mentors].sort((a, b) => {
     switch (sort) {
@@ -90,9 +72,18 @@ function sortMentors(mentors: Mentor[], sort: SortOption): Mentor[] {
 }
 
 function MentorCard({ mentor, onClick }: { mentor: Mentor; onClick: () => void }) {
+  const { t } = useTranslation()
   const tier = getMentorTier(mentor)
   const cfg = tierConfig[tier]
   const progressPct = Math.min((mentor.studentCount / STUDENT_GOOD) * 100, 100)
+  const { Icon } = cfg
+
+  const tierLabel =
+    tier === 'good'
+      ? t('mentors.tierGood')
+      : tier === 'average'
+      ? t('mentors.tierAverage')
+      : t('mentors.tierDecreased')
 
   return (
     <div
@@ -100,7 +91,7 @@ function MentorCard({ mentor, onClick }: { mentor: Mentor; onClick: () => void }
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
-      className={`rounded-2xl p-5 cursor-pointer transition-all duration-200 animate-slide-up ${cfg.cardClass}`}
+      className={`rounded-2xl p-5 cursor-pointer transition-all duration-200 animate-slide-up select-none outline-none [-webkit-tap-highlight-color:transparent] ${cfg.cardClass}`}
     >
       {/* Top row */}
       <div className="flex items-start justify-between mb-4">
@@ -111,7 +102,10 @@ function MentorCard({ mentor, onClick }: { mentor: Mentor; onClick: () => void }
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-semibold text-slate-200 text-sm leading-tight">{mentor.name}</h3>
-              {cfg.badge}
+              <span className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>
+                <Icon size={9} />
+                {tierLabel}
+              </span>
             </div>
             <p className="text-slate-600 text-xs mt-0.5">{mentor.branch}</p>
           </div>
@@ -126,19 +120,19 @@ function MentorCard({ mentor, onClick }: { mentor: Mentor; onClick: () => void }
         <div className="bg-white/[0.03] rounded-xl p-3 text-center">
           <BookOpen size={11} className="text-violet-400 mx-auto mb-1" />
           <p className="text-violet-400 font-bold text-xl">{mentor.groupCount}</p>
-          <p className="text-slate-600 text-xs">Guruhlar</p>
+          <p className="text-slate-600 text-xs">{t('mentors.groups')}</p>
         </div>
         <div className="bg-white/[0.03] rounded-xl p-3 text-center">
           <Users size={11} className={`${cfg.countColor} mx-auto mb-1`} />
           <p className={`font-bold text-xl ${cfg.countColor}`}>{mentor.studentCount}</p>
-          <p className="text-slate-600 text-xs">O'quvchilar</p>
+          <p className="text-slate-600 text-xs">{t('mentors.students')}</p>
         </div>
       </div>
 
       {/* Progress */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-slate-600 text-xs">Yuklama ({STUDENT_GOOD} chegara)</span>
+          <span className="text-slate-600 text-xs">{t('mentors.workload', { limit: STUDENT_GOOD })}</span>
           <span className={`text-xs font-semibold ${cfg.countColor}`}>
             {mentor.studentCount}/{STUDENT_GOOD}
           </span>
@@ -152,7 +146,7 @@ function MentorCard({ mentor, onClick }: { mentor: Mentor; onClick: () => void }
         {mentor.trend === 'down' && mentor.prevStudentCount !== null && (
           <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1">
             <TrendingDown size={10} />
-            Kechagidan {mentor.prevStudentCount - mentor.studentCount} ta kamaydi
+            {t('mentors.decreased', { count: mentor.prevStudentCount - mentor.studentCount })}
           </p>
         )}
       </div>
@@ -161,12 +155,20 @@ function MentorCard({ mentor, onClick }: { mentor: Mentor; onClick: () => void }
 }
 
 export default function MentorsPage() {
+  const { t } = useTranslation()
   const { data: mentors, isLoading, isError, error, refetch } = useMentors()
   const [selectedMentor, setSelectedMentor] = useState<Mentor | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [branchFilter, setBranchFilter] = useState('')
   const [gradeFilter, setGradeFilter] = useState<MentorGrade | ''>('')
   const [sortBy, setSortBy] = useState<SortOption>('students-desc')
+
+  const sortOptions: { value: SortOption; label: string }[] = useMemo(() => [
+    { value: 'students-desc', label: t('mentors.sortStudentsDesc') },
+    { value: 'students-asc', label: t('mentors.sortStudentsAsc') },
+    { value: 'groups-desc', label: t('mentors.sortGroupsDesc') },
+    { value: 'name', label: t('mentors.sortByName') },
+  ], [t])
 
   const branches = useMemo(
     () => Array.from(new Set(mentors?.map((m) => m.branch) ?? [])).sort(),
@@ -201,13 +203,13 @@ export default function MentorsPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-white">Mentorlar</h1>
-          <p className="text-slate-500 text-sm mt-1">Barcha mentorlar va ularning yuklamalari</p>
+          <h1 className="text-2xl font-bold text-white">{t('mentors.title')}</h1>
+          <p className="text-slate-500 text-sm mt-1">{t('mentors.subtitle')}</p>
         </div>
         {decreasedCount > 0 && (
           <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/25 text-red-400 text-sm font-medium">
             <TrendingDown size={15} />
-            {decreasedCount} ta mentorda o'quvchi kamaydi
+            {t('mentors.decreasedAlert', { count: decreasedCount })}
           </div>
         )}
       </div>
@@ -219,7 +221,7 @@ export default function MentorsPage() {
             <Search size={14} className="text-slate-600 flex-shrink-0" />
             <input
               type="text"
-              placeholder="Mentor qidirish..."
+              placeholder={t('mentors.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="grow text-sm bg-transparent text-slate-300 placeholder-slate-600 outline-none"
@@ -233,7 +235,7 @@ export default function MentorsPage() {
               onChange={(e) => setBranchFilter(e.target.value)}
               className="grow bg-transparent text-sm text-slate-300 focus:outline-none cursor-pointer appearance-none"
             >
-              <option value="" className="bg-[#161b27]">Barcha filiallar</option>
+              <option value="" className="bg-[#161b27]">{t('mentors.allBranches')}</option>
               {branches.map((b) => <option key={b} value={b} className="bg-[#161b27]">{b}</option>)}
             </select>
           </div>
@@ -243,7 +245,7 @@ export default function MentorsPage() {
             onChange={(e) => setGradeFilter(e.target.value as MentorGrade | '')}
             className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-sm text-slate-300 focus:outline-none cursor-pointer appearance-none"
           >
-            <option value="" className="bg-[#161b27]">Barcha darajalar</option>
+            <option value="" className="bg-[#161b27]">{t('mentors.allGrades')}</option>
             <option value="senior" className="bg-[#161b27]">Senior</option>
             <option value="middle" className="bg-[#161b27]">Middle</option>
             <option value="junior" className="bg-[#161b27]">Junior</option>
@@ -263,30 +265,30 @@ export default function MentorsPage() {
       {mentors && (
         <div className="flex items-center justify-between flex-wrap gap-3">
           <p className="text-slate-500 text-sm">
-            {filtered.length} ta mentor
-            {hasActiveFilters && <span className="text-indigo-400 ml-2">• Filtr qo'llanilgan</span>}
+            {t('mentors.mentorCount', { count: filtered.length })}
+            {hasActiveFilters && <span className="text-indigo-400 ml-2">• {t('mentors.filterApplied')}</span>}
           </p>
           <div className="flex items-center gap-4 text-xs">
             <span className="flex items-center gap-1.5 text-slate-500">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              Yaxshi: <span className="text-emerald-400 font-semibold ml-0.5">{tierCounts.good}</span>
+              {t('mentors.tierGood')}: <span className="text-emerald-400 font-semibold ml-0.5">{tierCounts.good}</span>
             </span>
             <span className="flex items-center gap-1.5 text-slate-500">
               <span className="w-2 h-2 rounded-full bg-amber-500" />
-              O'rtacha: <span className="text-amber-400 font-semibold ml-0.5">{tierCounts.average}</span>
+              {t('mentors.tierAverage')}: <span className="text-amber-400 font-semibold ml-0.5">{tierCounts.average}</span>
             </span>
             <span className="flex items-center gap-1.5 text-slate-500">
               <span className="w-2 h-2 rounded-full bg-red-500" />
-              Kamaydi: <span className="text-red-400 font-semibold ml-0.5">{tierCounts.decreased}</span>
+              {t('mentors.tierDecreased')}: <span className="text-red-400 font-semibold ml-0.5">{tierCounts.decreased}</span>
             </span>
           </div>
         </div>
       )}
 
-      {isLoading && <LoadingSpinner message="Mentorlar yuklanmoqda..." />}
+      {isLoading && <LoadingSpinner message={t('mentors.loading')} />}
       {isError && (
         <ErrorMessage
-          message={(error as Error)?.message || "Ma'lumotlarni yuklashda xatolik"}
+          message={(error as Error)?.message || t('mentors.loadError')}
           onRetry={() => refetch()}
         />
       )}
@@ -302,12 +304,12 @@ export default function MentorsPage() {
       {!isLoading && !isError && filtered.length === 0 && mentors && mentors.length > 0 && (
         <div className="bg-[#161b27] border border-white/[0.06] rounded-2xl flex flex-col items-center py-20 gap-3">
           <Search size={36} className="text-slate-700" />
-          <p className="text-slate-500">Filtr bo'yicha mentor topilmadi</p>
+          <p className="text-slate-500">{t('mentors.noResults')}</p>
           <button
             onClick={() => { setSearchQuery(''); setBranchFilter(''); setGradeFilter('') }}
             className="text-indigo-400 hover:text-indigo-300 text-sm font-medium mt-1 transition-colors"
           >
-            Filtrni tozalash
+            {t('mentors.clearFilter')}
           </button>
         </div>
       )}
@@ -315,7 +317,7 @@ export default function MentorsPage() {
       {!isLoading && !isError && mentors && mentors.length === 0 && (
         <div className="bg-[#161b27] border border-white/[0.06] rounded-2xl flex flex-col items-center py-20 gap-3">
           <Users size={36} className="text-slate-700" />
-          <p className="text-slate-500">Hozircha mentorlar mavjud emas</p>
+          <p className="text-slate-500">{t('mentors.noMentors')}</p>
         </div>
       )}
 

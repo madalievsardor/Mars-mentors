@@ -8,6 +8,7 @@ import {
   MarsGroupsResponse,
   MarsTeacher,
   MentorStat,
+  SimpleMentorGroup,
 } from './mars.types';
 
 const COOKIE_TTL_MS = 50 * 60 * 1000; // 50 min
@@ -170,7 +171,13 @@ export class MarsService {
       const stat = mentorMap.get(mentorId)!;
       stat.groupCount += 1;
       stat.studentCount += group.students_number ?? 0;
-      stat.groups.push(group);
+      const simpleGroup: SimpleMentorGroup = {
+        name: group.name,
+        category: group.category?.name ?? '',
+        time: group.lesson_start_time ?? '',
+        studentCount: group.students_number ?? 0,
+      };
+      stat.groups.push(simpleGroup);
     }
 
     try {

@@ -32,8 +32,8 @@ export const getMentors = async (): Promise<Mentor[]> => {
 };
 
 export const getMentorHistory = async (id: string): Promise<MentorHistory[]> => {
-  const { data } = await api.get<MentorHistory[]>(`/mentors/${id}/history`);
-  return data;
+  const { data } = await api.get<{ mentorId: number; history: MentorHistory[] }>(`/mentors/${id}/history`);
+  return data.history ?? [];
 };
 
 export const getNotificationSettings = async (): Promise<NotificationSetting[]> => {

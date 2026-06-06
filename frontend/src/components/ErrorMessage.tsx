@@ -1,4 +1,5 @@
 import { AlertCircle, RefreshCw } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface ErrorMessageProps {
   message?: string
@@ -6,6 +7,8 @@ interface ErrorMessageProps {
 }
 
 export default function ErrorMessage({ message, onRetry }: ErrorMessageProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-16 animate-fade-in">
       <div className="bg-red-500/[0.08] border border-red-500/20 rounded-2xl p-8 flex flex-col items-center gap-4 max-w-sm text-center">
@@ -13,7 +16,7 @@ export default function ErrorMessage({ message, onRetry }: ErrorMessageProps) {
           <AlertCircle size={24} className="text-red-400" />
         </div>
         <div>
-          <p className="text-red-400 font-semibold">Xatolik yuz berdi</p>
+          <p className="text-red-400 font-semibold">{t('common.error')}</p>
           {message && <p className="text-slate-500 text-sm mt-1.5">{message}</p>}
         </div>
         {onRetry && (
@@ -22,7 +25,7 @@ export default function ErrorMessage({ message, onRetry }: ErrorMessageProps) {
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-medium transition-colors"
           >
             <RefreshCw size={13} />
-            Qayta urinish
+            {t('common.retry')}
           </button>
         )}
       </div>

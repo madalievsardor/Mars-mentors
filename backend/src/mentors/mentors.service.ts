@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MarsService } from '../mars/mars.service';
 import { SnapshotsService } from '../snapshots/snapshots.service';
-import { MentorStat, MarsGroup } from '../mars/mars.types';
+import { MentorStat, SimpleMentorGroup } from '../mars/mars.types';
 import { MentorSnapshot } from '@prisma/client';
 
 export interface MentorResponse {
@@ -12,7 +12,7 @@ export interface MentorResponse {
   grade: string;
   groupCount: number;
   studentCount: number;
-  groups: MarsGroup[];
+  groups: SimpleMentorGroup[];
   trend: 'up' | 'down' | 'stable' | null;
   prevStudentCount: number | null;
 }

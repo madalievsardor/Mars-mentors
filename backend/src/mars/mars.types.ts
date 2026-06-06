@@ -17,7 +17,22 @@ export interface MarsBranch {
 }
 
 export interface MarsCategory {
+  id?: number;
   name: string;
+  external_id?: string;
+  image?: string;
+  banner?: string;
+  for_sale?: boolean;
+  progress_percentage?: number;
+  number_of_lessons?: number;
+  program?: unknown;
+}
+
+export interface SimpleMentorGroup {
+  name: string;
+  category: string;
+  time: string;
+  studentCount: number;
 }
 
 export interface MarsGroupUser {
@@ -49,5 +64,5 @@ export interface MentorStat {
   grade: string;
   groupCount: number;
   studentCount: number;
-  groups: MarsGroup[];
+  groups: SimpleMentorGroup[];
 }

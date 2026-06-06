@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import type { FormEvent } from 'react'
 import { Eye, EyeOff, AlertCircle, ChevronDown, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
 
 const SAVED_CREDS_KEY = 'mars_saved_credentials'
@@ -34,6 +35,7 @@ interface LoginPageProps {
 }
 
 export default function LoginPage({ onSuccess }: LoginPageProps) {
+  const { t } = useTranslation()
   const { login } = useAuth()
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
@@ -81,7 +83,7 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? 'Telefon raqam yoki parol xato'
+          ?.message ?? t('login.errorDefault')
       setError(msg)
     } finally {
       setLoading(false)
@@ -101,25 +103,25 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
             />
             <div className="absolute -inset-1 rounded-2xl opacity-20 blur-md -z-10 bg-white" />
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Mars IT Academy</h1>
-          <p className="text-slate-500 text-sm mt-1">Dashboard</p>
+          <h1 className="text-xl font-bold text-white tracking-tight">{t('login.title')}</h1>
+          <p className="text-slate-500 text-sm mt-1">{t('login.subtitle')}</p>
         </div>
 
         {/* Card */}
         <div className="bg-[#161b27] border border-white/[0.08] rounded-2xl p-6 shadow-2xl">
-          <h2 className="text-base font-semibold text-slate-200 mb-5">Kirish</h2>
+          <h2 className="text-base font-semibold text-slate-200 mb-5">{t('login.heading')}</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Phone */}
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1.5">
-                Telefon raqam
+                {t('login.phone')}
               </label>
               <div className="relative" ref={dropdownRef}>
                 <input
                   ref={inputRef}
                   type="tel"
-                  placeholder="+998901234567"
+                  placeholder={t('login.phonePlaceholder')}
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   onFocus={() => savedCreds.length > 0 && setShowDropdown(true)}
@@ -167,7 +169,7 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
             {/* Password */}
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1.5">
-                Parol
+                {t('login.password')}
               </label>
               <div className="relative">
                 <input
@@ -206,12 +208,12 @@ export default function LoginPage({ onSuccess }: LoginPageProps) {
               {loading ? (
                 <span className="loading loading-spinner loading-xs" />
               ) : null}
-              {loading ? 'Kirilmoqda...' : 'Kirish'}
+              {loading ? t('login.loading') : t('login.submit')}
             </button>
           </form>
 
           <p className="text-center text-slate-600 text-xs mt-5">
-            Mars IT telefon raqamingiz + dashboard paroli bilan kiring
+            {t('login.hint')}
           </p>
         </div>
       </div>

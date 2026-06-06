@@ -20,14 +20,18 @@ export const useDashboard = () =>
   useQuery({
     queryKey: QUERY_KEYS.dashboard,
     queryFn: getDashboard,
-    refetchInterval: 60_000,
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
 export const useMentors = () =>
   useQuery({
     queryKey: QUERY_KEYS.mentors,
     queryFn: getMentors,
-    refetchInterval: 60_000,
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
 export const useMentorHistory = (id: string | null) =>
