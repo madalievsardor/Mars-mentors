@@ -10,7 +10,7 @@ services:
     runtime: node
     rootDir: backend
     plan: free
-    buildCommand: pnpm install && pnpm build && pnpm db:migrate && pnpm db:generate
+    buildCommand: pnpm install --prod=false && pnpm build && pnpm db:migrate && pnpm db:generate
     startCommand: node dist/main
     envVars:
       - key: NODE_ENV
