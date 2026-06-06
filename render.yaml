@@ -10,8 +10,8 @@ services:
     runtime: node
     rootDir: backend
     plan: free
-    buildCommand: pnpm install --prod=false && pnpm db:generate && pnpm build && pnpm db:migrate
-    startCommand: node dist/main
+    buildCommand: pnpm install --prod=false && pnpm db:generate && pnpm build
+    startCommand: npx prisma migrate deploy && node dist/main
     envVars:
       - key: NODE_ENV
         value: production
