@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model MentorSnapshot {
+  id           Int      @id @default(autoincrement())
+  date         DateTime @db.Date
+  mentorId     Int
+  mentorName   String
+  branch       String
+  grade        String
+  groupCount   Int
+  studentCount Int
+  groups       Json
+  createdAt    DateTime @default(now())
+
+  @@unique([date, mentorId])
+  @@map("mentor_snapshots")
+}
+
+model NotificationSetting {
+  id         Int     @id @default(autoincrement())
+  mentorId   Int     @unique
+  mentorName String
+  branch     String
+  enabled    Boolean @default(true)
+  threshold  Int     @default(30)
+  chatId     String  @default("1738593169")
+
+  @@map("notification_settings")
+}
+
+model Alert {
+  id         Int      @id @default(autoincrement())
+  type       String
+  mentorId   Int
+  mentorName String
+  branch     String
+  message    String
+  oldCount   Int?
+  newCount   Int
+  sentAt     DateTime @default(now())
+
+  @@map("alerts")
+}

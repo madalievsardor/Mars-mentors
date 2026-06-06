@@ -1,0 +1,51 @@
+databases:
+  - name: mars-dashboard-db
+    databaseName: mars_dashboard
+    plan: free
+
+services:
+  # ── Backend (NestJS API) ──────────────────────────────────────
+  - type: web
+    name: mars-dashboard-api
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: pnpm install && pnpm build && pnpm db:migrate && pnpm db:generate
+    startCommand: node dist/main
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mars-dashboard-db
+          property: connectionString
+      - key: MARS_API_BASE_URL
+        value: https://api.marsit.uz/api/v1
+      - key: MARS_PHONE
+        sync: false
+      - key: MARS_PASSWORD
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_DEFAULT_CHAT_ID
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+
+  # ── Frontend (React/Vite static) ─────────────────────────────
+  - type: web
+    name: mars-dashboard
+    runtime: static
+    rootDir: frontend
+    plan: free
+    buildCommand: pnpm install && pnpm build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
