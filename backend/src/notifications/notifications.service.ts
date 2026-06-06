@@ -92,15 +92,28 @@ export class NotificationsService {
       let alertMessage: string | null = null;
       let alertType: string | null = null;
 
-      // Threshold crossed: yesterday below threshold, today at or above
-      if (newCount >= threshold && (oldCount === null || oldCount < threshold)) {
-        alertType = 'threshold_reached';
-        alertMessage = `🔴 <b>${stat.name}</b> mentorning o'quvchi soni <b>${newCount}</b>taga yetdi!`;
-      }
       // Student count decreased
-      else if (oldCount !== null && newCount < oldCount) {
+      if (oldCount !== null && newCount < oldCount) {
+        const diff = oldCount - newCount;
         alertType = 'count_decreased';
-        alertMessage = `🟡 <b>${stat.name}</b> mentorning o'quvchi soni kamaydi: <b>${oldCount}</b> → <b>${newCount}</b>`;
+        alertMessage =
+          `⬇️ <b>O'quvchi kamaydi!</b>\n\n` +
+          `👤 <b>Mentor:</b> ${stat.name}\n` +
+          `🏢 <b>Filial:</b> ${stat.branch}\n` +
+          `📊 <b>O'zgarish:</b> ${oldCount} → ${newCount} (<b>-${diff} ta</b>)\n` +
+          `📚 <b>Guruhlar soni:</b> ${stat.groupCount}\n\n` +
+          `💡 Bu mentorga yangi guruh berish mumkin.`;
+      }
+      // Threshold crossed: students reached overload limit
+      else if (newCount >= threshold && (oldCount === null || oldCount < threshold)) {
+        alertType = 'threshold_reached';
+        alertMessage =
+          `🔴 <b>Yuklama chegarasi!</b>\n\n` +
+          `👤 <b>Mentor:</b> ${stat.name}\n` +
+          `🏢 <b>Filial:</b> ${stat.branch}\n` +
+          `👥 <b>O'quvchilar:</b> ${newCount} ta (chegara: ${threshold})\n` +
+          `📚 <b>Guruhlar soni:</b> ${stat.groupCount}\n\n` +
+          `⚠️ Bu mentorga yangi guruh bermang.`;
       }
 
       if (alertMessage && alertType) {
