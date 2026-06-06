@@ -39,7 +39,6 @@ services:
     name: mars-dashboard
     runtime: static
     rootDir: frontend
-    plan: free
     buildCommand: pnpm install && pnpm build
     staticPublishPath: dist
     envVars:
