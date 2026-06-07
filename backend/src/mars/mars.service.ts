@@ -93,8 +93,8 @@ export class MarsService {
   }
 
   private async autoLogin(): Promise<boolean> {
-    const phone = this.configService.get<string>('MARS_PHONE', '');
-    const password = this.configService.get<string>('MARS_PASSWORD', '');
+    const phone = this.marsPhone || this.configService.get<string>('MARS_PHONE', '');
+    const password = this.marsPassword || this.configService.get<string>('MARS_PASSWORD', '');
     if (!phone || !password) {
       this.logger.warn('MARS_PHONE/MARS_PASSWORD not set — cannot auto-login');
       return false;
@@ -189,6 +189,17 @@ export class MarsService {
       this.logger.log(`Total active groups fetched: ${allGroups.length}`);
       return allGroups;
     });
+  }
+
+  private marsPhone = '';
+  private marsPassword = '';
+
+  setCredentials(phone: string, password: string, accessToken: string, refreshToken: string): void {
+    this.marsPhone = phone;
+    this.marsPassword = password;
+    this.cachedCookieHeader = `admin_access_token=${accessToken}; admin_refresh_token=${refreshToken}`;
+    this.cookiesLoadedAt = Date.now();
+    this.logger.log(`Mars credentials set for ${phone}`);
   }
 
   invalidateCache(): void {
