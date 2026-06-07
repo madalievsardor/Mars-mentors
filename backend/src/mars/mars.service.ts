@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import {
   MarsGroup,
@@ -92,6 +92,43 @@ export class MarsService {
     return { Cookie: this.getCookieHeader() };
   }
 
+  private async autoLogin(): Promise<boolean> {
+    const phone = this.configService.get<string>('MARS_PHONE', '');
+    const password = this.configService.get<string>('MARS_PASSWORD', '');
+    if (!phone || !password) {
+      this.logger.warn('MARS_PHONE/MARS_PASSWORD not set — cannot auto-login');
+      return false;
+    }
+
+    try {
+      this.logger.log(`Auto-login attempt as ${phone}...`);
+      const resp = await this.httpClient.post<{
+        access_token: string;
+        refresh_token: string;
+      }>('/auth/signin', { phone, password });
+
+      const { access_token, refresh_token } = resp.data;
+      const cookies = { admin_access_token: access_token, admin_refresh_token: refresh_token };
+
+      // Save to file (local dev)
+      const filePath = join(process.cwd(), 'mars-cookies.json');
+      try {
+        writeFileSync(filePath, JSON.stringify(cookies, null, 2));
+      } catch {
+        // Read-only filesystem (production) — skip file write
+      }
+
+      // Update in-memory cache
+      this.cachedCookieHeader = `admin_access_token=${access_token}; admin_refresh_token=${refresh_token}`;
+      this.cookiesLoadedAt = Date.now();
+      this.logger.log('Auto-login successful — cookies updated');
+      return true;
+    } catch (err: unknown) {
+      this.logger.error(`Auto-login failed: ${(err as Error).message}`);
+      return false;
+    }
+  }
+
   private async requestWithRetry<T>(
     fn: (headers: Record<string, string>) => Promise<T>,
   ): Promise<T> {
@@ -101,10 +138,14 @@ export class MarsService {
     } catch (err: unknown) {
       const httpStatus = axios.isAxiosError(err) ? err.response?.status : undefined;
       if (httpStatus === 401 || httpStatus === 403) {
-        // Force reload cookies and retry once
+        // Try auto-login first, then retry
+        const loggedIn = await this.autoLogin();
+        if (loggedIn) {
+          return fn(this.getAuthHeaders());
+        }
+        // Fallback: force reload from file/env
         this.cachedCookieHeader = '';
-        const freshHeaders = this.getAuthHeaders();
-        return fn(freshHeaders);
+        return fn(this.getAuthHeaders());
       }
       throw err;
     }
