@@ -19,6 +19,9 @@ export class MarsService {
   private readonly httpClient: AxiosInstance;
   private cachedCookieHeader = '';
   private cookiesLoadedAt = 0;
+  private cachedStats: MentorStat[] | null = null;
+  private statsLoadedAt = 0;
+  private readonly STATS_TTL_MS = 5 * 60 * 1000; // 5 daqiqa
 
   constructor(private readonly configService: ConfigService) {
     const baseUrl = this.configService.get<string>(
@@ -147,7 +150,18 @@ export class MarsService {
     });
   }
 
+  invalidateCache(): void {
+    this.cachedStats = null;
+    this.statsLoadedAt = 0;
+  }
+
   async computeMentorStats(): Promise<MentorStat[]> {
+    const now = Date.now();
+    if (this.cachedStats && now - this.statsLoadedAt < this.STATS_TTL_MS) {
+      this.logger.log(`Returning cached mentor stats (${Math.round((now - this.statsLoadedAt) / 1000)}s old)`);
+      return this.cachedStats;
+    }
+
     const groups = await this.getAllActiveGroups();
     const mentorMap = new Map<number, MentorStat>();
 
@@ -191,6 +205,9 @@ export class MarsService {
       this.logger.warn(`Could not enrich mentor grades: ${(err as Error).message}`);
     }
 
-    return Array.from(mentorMap.values());
+    this.cachedStats = Array.from(mentorMap.values());
+    this.statsLoadedAt = Date.now();
+    this.logger.log(`Mentor stats cached: ${this.cachedStats.length} mentors`);
+    return this.cachedStats;
   }
 }

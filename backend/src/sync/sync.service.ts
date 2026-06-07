@@ -34,17 +34,20 @@ export class SyncService {
     this.logger.log('Starting sync...');
 
     try {
-      // 1. Fetch current mentor stats from Mars API
+      // 1. Invalidate cache so fresh data is fetched from Mars API
+      this.marsService.invalidateCache();
+
+      // 2. Fetch current mentor stats from Mars API
       const stats = await this.marsService.computeMentorStats();
 
-      // 2. Get yesterday's snapshots for comparison
+      // 3. Get yesterday's snapshots for comparison
       const yesterdaySnapshots =
         await this.snapshotsService.getYesterdaySnapshots();
 
-      // 3. Save today's snapshots
+      // 4. Save today's snapshots
       await this.snapshotsService.saveSnapshots(stats, new Date());
 
-      // 4. Upsert notification settings for new mentors
+      // 5. Upsert notification settings for new mentors
       for (const stat of stats) {
         await this.notificationsService.upsertSettingForMentor(
           stat.id,
@@ -53,7 +56,7 @@ export class SyncService {
         );
       }
 
-      // 5. Check thresholds and send alerts
+      // 6. Check thresholds and send alerts
       await this.notificationsService.checkAndNotify(stats, yesterdaySnapshots);
 
       const totalGroups = stats.reduce((sum, s) => sum + s.groupCount, 0);
