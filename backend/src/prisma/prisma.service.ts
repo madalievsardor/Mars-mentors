@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -6,6 +6,7 @@ import { Pool } from 'pg';
 
 @Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(PrismaService.name);
   private readonly client: PrismaClient;
   private readonly pool: Pool;
 
@@ -20,7 +21,17 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit(): Promise<void> {
-    await this.client.$connect();
+    // Don't crash the whole app if the DB is unreachable — auth/login and the Mars
+    // proxy endpoints work without it. Snapshot/notification features that DO need the
+    // DB will surface their own errors at call time.
+    try {
+      await this.client.$connect();
+      this.logger.log('Database connected');
+    } catch (err) {
+      this.logger.warn(
+        `Database connection failed (${(err as Error).message}) — continuing without DB`,
+      );
+    }
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -38,6 +49,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
 
   get alert() {
     return this.client.alert;
+  }
+
+  get marsAuth() {
+    return this.client.marsAuth;
   }
 
   async $transaction<T>(

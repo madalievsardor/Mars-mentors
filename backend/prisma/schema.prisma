@@ -50,3 +50,15 @@ model Alert {
 
   @@map("alerts")
 }
+
+/// Single-row store for the rotating Mars admin auth tokens.
+/// The refresh token is long-lived (~7 days) and is rotated on every
+/// GET /auth/token call, so we persist the latest one to survive restarts.
+model MarsAuth {
+  id           Int      @id @default(1)
+  refreshToken String
+  accessToken  String?
+  updatedAt    DateTime @updatedAt
+
+  @@map("mars_auth")
+}

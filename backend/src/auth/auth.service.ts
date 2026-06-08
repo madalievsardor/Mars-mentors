@@ -36,6 +36,12 @@ export class AuthService {
       'https://api.marsit.uz/api/v1',
     );
 
+    // 1) Best-effort: try the real Mars signin (gives per-user tokens).
+    //    api.marsit.uz/auth/signin is unreliable — it is fronted by Cloudflare and
+    //    frequently answers "Could not validate credentials" (HTTP 400) even for valid
+    //    web credentials, which is exactly why the Mars MCP authenticates via browser
+    //    cookies instead. So we NEVER hard-fail here: any failure (incl. 400/401) just
+    //    falls through to the DASHBOARD_PASSWORD path below.
     try {
       this.logger.log(`Login attempt: ${dto.phone}`);
 
@@ -54,35 +60,35 @@ export class AuthService {
         },
       );
 
-      const { access_token, refresh_token, user } = resp.data;
-      const name = user
-        ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || dto.phone
-        : dto.phone;
+      const { access_token, refresh_token, user } = resp.data ?? {};
 
-      // Mars tokenlarini MarsService ga berish — keyingi API so'rovlarda ishlatiladi
-      this.marsService.setCredentials(dto.phone, dto.password, access_token, refresh_token);
+      // Only treat it as a real login if we actually got tokens back.
+      if (access_token && refresh_token) {
+        const name = user
+          ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || dto.phone
+          : dto.phone;
 
-      const payload: AuthPayload = { sub: dto.phone, name };
-      const token = this.jwtService.sign(payload);
+        // Mars tokenlarini MarsService ga berish — keyingi API so'rovlarda ishlatiladi
+        this.marsService.setCredentials(dto.phone, dto.password, access_token, refresh_token);
 
-      this.logger.log(`Login successful: ${name}`);
-      return { access_token: token, name };
+        const payload: AuthPayload = { sub: dto.phone, name };
+        const token = this.jwtService.sign(payload);
 
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        const status = err.response?.status;
-        if (status === 401 || status === 400) {
-          throw new UnauthorizedException('Telefon raqam yoki parol xato');
-        }
-        // Mars API blok qilsa — DASHBOARD_PASSWORD fallback
-        if (!err.response || status === 503 || status === 403) {
-          this.logger.warn(`Mars API unreachable (${status}), trying DASHBOARD_PASSWORD fallback`);
-          return this.dashboardPasswordFallback(dto);
-        }
+        this.logger.log(`Login successful (Mars signin): ${name}`);
+        return { access_token: token, name };
       }
-      this.logger.error(`Login error: ${(err as Error).message}`);
-      throw new UnauthorizedException('Kirish amalga oshmadi');
+
+      this.logger.warn('Mars signin returned no token — falling back to DASHBOARD_PASSWORD');
+    } catch (err: unknown) {
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+      this.logger.warn(
+        `Mars signin failed (${status ?? 'no-response'}) — falling back to DASHBOARD_PASSWORD`,
+      );
     }
+
+    // 2) Reliable path: shared DASHBOARD_PASSWORD. Mentor data itself is fetched with the
+    //    admin cookies supplied via MARS_COOKIES_JSON (see MarsService), not these creds.
+    return this.dashboardPasswordFallback(dto);
   }
 
   private async dashboardPasswordFallback(dto: LoginDto): Promise<{ access_token: string; name: string }> {
