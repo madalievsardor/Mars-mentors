@@ -1,7 +1,6 @@
 import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
 import { MarsService } from '../mars/mars.service';
 
 export interface LoginDto {
@@ -12,12 +11,6 @@ export interface LoginDto {
 export interface AuthPayload {
   sub: string;
   name: string;
-}
-
-interface MarsLoginResponse {
-  access_token: string;
-  refresh_token: string;
-  user?: { first_name?: string; last_name?: string };
 }
 
 @Injectable()
@@ -31,74 +24,27 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto): Promise<{ access_token: string; name: string }> {
-    const baseUrl = this.configService.get<string>(
-      'MARS_API_BASE_URL',
-      'https://api.marsit.uz/api/v1',
-    );
+    // ── STRICT GATE ──────────────────────────────────────────────────────────
+    // Faqat bitta vakolatli kredensial kira oladi. Defaultlar kodga baked —
+    // Render env o'zgartirmasa ham ishlaydi. Eski DASHBOARD_PASSWORD'ga TAYANMAYDI.
+    const allowedPhone = this.configService.get<string>('ALLOWED_LOGIN_PHONE', '+998903151515');
+    const allowedPassword = this.configService.get<string>('ALLOWED_LOGIN_PASSWORD', '889900oo');
 
-    // 1) Best-effort: try the real Mars signin (gives per-user tokens).
-    //    api.marsit.uz/auth/signin is unreliable — it is fronted by Cloudflare and
-    //    frequently answers "Could not validate credentials" (HTTP 400) even for valid
-    //    web credentials, which is exactly why the Mars MCP authenticates via browser
-    //    cookies instead. So we NEVER hard-fail here: any failure (incl. 400/401) just
-    //    falls through to the DASHBOARD_PASSWORD path below.
-    try {
-      this.logger.log(`Login attempt: ${dto.phone}`);
+    // Telefonni normallashtir: faqat raqamlarni qoldir ("+998 90 315-15-15" → "998903151515")
+    const normalize = (p: string): string => (p ?? '').replace(/\D/g, '');
+    const phoneOk = normalize(dto.phone) === normalize(allowedPhone);
+    const passwordOk = dto.password === allowedPassword;
 
-      const resp = await axios.post<MarsLoginResponse>(
-        `${baseUrl}/auth/signin`,
-        { phone: dto.phone, password: dto.password },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            Origin: 'https://core.marsit.uz',
-            Referer: 'https://core.marsit.uz/',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          },
-          timeout: 15000,
-        },
-      );
-
-      const { access_token, refresh_token, user } = resp.data ?? {};
-
-      // Only treat it as a real login if we actually got tokens back.
-      if (access_token && refresh_token) {
-        const name = user
-          ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || dto.phone
-          : dto.phone;
-
-        // Mars tokenlarini MarsService ga berish — keyingi API so'rovlarda ishlatiladi
-        this.marsService.setCredentials(dto.phone, dto.password, access_token, refresh_token);
-
-        const payload: AuthPayload = { sub: dto.phone, name };
-        const token = this.jwtService.sign(payload);
-
-        this.logger.log(`Login successful (Mars signin): ${name}`);
-        return { access_token: token, name };
-      }
-
-      this.logger.warn('Mars signin returned no token — falling back to DASHBOARD_PASSWORD');
-    } catch (err: unknown) {
-      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
-      this.logger.warn(
-        `Mars signin failed (${status ?? 'no-response'}) — falling back to DASHBOARD_PASSWORD`,
-      );
-    }
-
-    // 2) Reliable path: shared DASHBOARD_PASSWORD. Mentor data itself is fetched with the
-    //    admin cookies supplied via MARS_COOKIES_JSON (see MarsService), not these creds.
-    return this.dashboardPasswordFallback(dto);
-  }
-
-  private async dashboardPasswordFallback(dto: LoginDto): Promise<{ access_token: string; name: string }> {
-    const dashboardPassword = this.configService.get<string>('DASHBOARD_PASSWORD', '');
-    if (!dashboardPassword || dto.password !== dashboardPassword) {
+    if (!phoneOk || !passwordOk) {
+      this.logger.warn(`Login rad etildi: ${dto.phone}`);
       throw new UnauthorizedException('Telefon raqam yoki parol xato');
     }
+
+    // Gate'dan o'tdi — to'g'ridan-to'g'ri JWT chiqaramiz. Mentor data baribir admin
+    // cookies (MARS_COOKIES_JSON → MarsService) orqali keladi, per-user Mars token kerak emas.
     const payload: AuthPayload = { sub: dto.phone, name: dto.phone };
     const token = this.jwtService.sign(payload);
-    this.logger.log(`Fallback login: ${dto.phone}`);
+    this.logger.log(`Login muvaffaqiyatli: ${dto.phone}`);
     return { access_token: token, name: dto.phone };
   }
 
