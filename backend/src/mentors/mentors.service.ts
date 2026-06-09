@@ -1,7 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MarsService } from '../mars/mars.service';
-import { SnapshotsService } from '../snapshots/snapshots.service';
+import {
+  SnapshotsService,
+  MentorLeftStudents,
+} from '../snapshots/snapshots.service';
 import { MentorStat, SimpleMentorGroup } from '../mars/mars.types';
 import { MentorSnapshot } from '@prisma/client';
 
@@ -24,6 +27,8 @@ export interface MentorHistoryResponse {
 
 @Injectable()
 export class MentorsService {
+  private readonly logger = new Logger(MentorsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly marsService: MarsService,
@@ -31,10 +36,19 @@ export class MentorsService {
   ) {}
 
   async getAllMentors(): Promise<MentorResponse[]> {
-    const [stats, yesterdaySnapshots] = await Promise.all([
-      this.marsService.computeMentorStats(),
-      this.snapshotsService.getYesterdaySnapshots(),
-    ]);
+    // Mars data is the source of truth and must succeed. The snapshot (trend) data
+    // comes from the local DB and is best-effort — if the DB is down we still return
+    // the mentor list, just without trend info, instead of failing the whole request.
+    const stats = await this.marsService.computeMentorStats();
+
+    let yesterdaySnapshots: MentorSnapshot[] = [];
+    try {
+      yesterdaySnapshots = await this.snapshotsService.getYesterdaySnapshots();
+    } catch (err) {
+      this.logger.warn(
+        `Could not load yesterday snapshots (${(err as Error).message}) — continuing without trend data`,
+      );
+    }
 
     const yesterdayMap = new Map<number, MentorSnapshot>(
       yesterdaySnapshots.map((s) => [s.mentorId, s]),
@@ -69,5 +83,18 @@ export class MentorsService {
   async getMentorHistory(mentorId: number): Promise<MentorHistoryResponse> {
     const history = await this.snapshotsService.getMentorHistory(mentorId);
     return { mentorId, history };
+  }
+
+  /** All mentors that have students who left between the two latest rosters. */
+  async getLeftStudents(): Promise<MentorLeftStudents[]> {
+    return this.snapshotsService.getLeftStudents();
+  }
+
+  /** Left-students for a single mentor (null if none / not enough data yet). */
+  async getMentorLeftStudents(
+    mentorId: number,
+  ): Promise<MentorLeftStudents | null> {
+    const result = await this.snapshotsService.getLeftStudents(mentorId);
+    return result[0] ?? null;
   }
 }

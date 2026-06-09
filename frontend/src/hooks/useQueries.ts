@@ -3,9 +3,12 @@ import {
   getDashboard,
   getMentors,
   getMentorHistory,
+  getMentorLeftStudents,
   getNotificationSettings,
   updateNotificationSetting,
   triggerSync,
+  getInternsSummary,
+  getInternDetail,
 } from '../api/client';
 import type { NotificationSetting } from '../types';
 
@@ -13,8 +16,28 @@ export const QUERY_KEYS = {
   dashboard: ['dashboard'] as const,
   mentors: ['mentors'] as const,
   mentorHistory: (id: string) => ['mentors', id, 'history'] as const,
+  mentorLeftStudents: (id: string) => ['mentors', id, 'left-students'] as const,
   notifications: ['notifications'] as const,
+  interns: ['interns'] as const,
+  internDetail: (id: string) => ['interns', id, 'detail'] as const,
 };
+
+export const useInterns = () =>
+  useQuery({
+    queryKey: QUERY_KEYS.interns,
+    queryFn: getInternsSummary,
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+export const useInternDetail = (id: string | null) =>
+  useQuery({
+    queryKey: QUERY_KEYS.internDetail(id ?? ''),
+    queryFn: () => getInternDetail(id!),
+    enabled: id !== null,
+    staleTime: 60 * 1000,
+  });
 
 export const useDashboard = () =>
   useQuery({
@@ -38,6 +61,13 @@ export const useMentorHistory = (id: string | null) =>
   useQuery({
     queryKey: QUERY_KEYS.mentorHistory(id ?? ''),
     queryFn: () => getMentorHistory(id!),
+    enabled: id !== null,
+  });
+
+export const useMentorLeftStudents = (id: string | null) =>
+  useQuery({
+    queryKey: QUERY_KEYS.mentorLeftStudents(id ?? ''),
+    queryFn: () => getMentorLeftStudents(id!),
     enabled: id !== null,
   });
 

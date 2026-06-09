@@ -7,6 +7,7 @@ import './i18n'
 import Layout from './components/Layout'
 import DashboardPage from './pages/DashboardPage'
 import MentorsPage from './pages/MentorsPage'
+import InternsPage from './pages/InternsPage'
 import NotificationsPage from './pages/NotificationsPage'
 import LoginPage from './pages/LoginPage'
 import { AuthContext, useAuth, useAuthState } from './hooks/useAuth'
@@ -36,6 +37,7 @@ function AppRoutes() {
       <Route path="/" element={<Layout onLogout={logout} userName={name} />}>
         <Route index element={<DashboardPage />} />
         <Route path="mentors" element={<MentorsPage />} />
+        <Route path="interns" element={<InternsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

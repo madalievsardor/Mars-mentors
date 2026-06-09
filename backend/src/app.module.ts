@@ -10,6 +10,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { SyncModule } from './sync/sync.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { MentorsModule } from './mentors/mentors.module';
+import { InternsModule } from './interns/interns.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 
@@ -28,6 +29,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     SyncModule,
     DashboardModule,
     MentorsModule,
+    InternsModule,
     AuthModule,
   ],
   providers: [

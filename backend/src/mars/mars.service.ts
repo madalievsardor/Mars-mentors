@@ -7,6 +7,7 @@ import {
   MarsGroupsResponse,
   MarsTeacher,
   MentorStat,
+  RosterStudent,
   SimpleMentorGroup,
 } from './mars.types';
 
@@ -276,6 +277,91 @@ export class MarsService {
       this.logger.log(`Total active groups fetched: ${allGroups.length}`);
       return allGroups;
     });
+  }
+
+  /**
+   * Fetch the active student roster (id + name) of a single group.
+   *
+   * Uses `GET /attendance/{group_id}` (the same endpoint the attendance UI hits),
+   * which returns a list of students with their attendance progress. We only need
+   * the student id + name, so we defensively pull those out of whatever shape the
+   * API returns (the payload nests the student under a few possible keys).
+   *
+   * Returns [] (never throws) so one bad group can't break a whole roster sync.
+   */
+  async getGroupRoster(groupId: number): Promise<RosterStudent[]> {
+    // A 14-day window is enough to surface every currently-enrolled student
+    // (anyone with at least one lesson in the period) without paging.
+    const till = new Date();
+    const from = new Date();
+    from.setUTCDate(from.getUTCDate() - 14);
+    const fmt = (d: Date): string => d.toISOString().slice(0, 10);
+
+    try {
+      const data = await this.requestWithRetry(async (headers) => {
+        const response = await this.httpClient.get<unknown>(
+          `/attendance/${groupId}`,
+          {
+            headers,
+            params: { from_date: fmt(from), till_date: fmt(till) },
+          },
+        );
+        return response.data;
+      });
+      return this.parseRoster(data);
+    } catch (err) {
+      this.logger.warn(
+        `Could not fetch roster for group ${groupId}: ${(err as Error).message}`,
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Pull a deduplicated [{id, name}] list out of an attendance payload. The API
+   * may return the students array under several keys and each student object may
+   * carry the name as `name`, `first_name`+`last_name`, or a nested `student`/`user`.
+   */
+  private parseRoster(data: unknown): RosterStudent[] {
+    const root = data as Record<string, unknown> | unknown[] | null;
+    let list: unknown[] = [];
+
+    if (Array.isArray(root)) {
+      list = root;
+    } else if (root && typeof root === 'object') {
+      const obj = root as Record<string, unknown>;
+      const candidate =
+        obj['students_progress'] ??
+        obj['students'] ??
+        obj['progress'] ??
+        obj['data'] ??
+        obj['results'];
+      if (Array.isArray(candidate)) list = candidate;
+    }
+
+    const byId = new Map<number, RosterStudent>();
+    for (const raw of list) {
+      if (!raw || typeof raw !== 'object') continue;
+      const entry = raw as Record<string, unknown>;
+      // The student fields may be on the entry itself or nested.
+      const inner =
+        (entry['student'] as Record<string, unknown> | undefined) ??
+        (entry['user'] as Record<string, unknown> | undefined) ??
+        entry;
+
+      const idVal = inner['id'] ?? inner['student_id'] ?? entry['student_id'];
+      const id = Number(idVal);
+      if (!Number.isFinite(id) || id <= 0) continue;
+
+      const first = (inner['first_name'] ?? inner['firstName'] ?? '') as string;
+      const last = (inner['last_name'] ?? inner['lastName'] ?? '') as string;
+      const directName = (inner['name'] ?? inner['full_name'] ?? '') as string;
+      const name =
+        `${first} ${last}`.trim() || String(directName).trim() || `#${id}`;
+
+      if (!byId.has(id)) byId.set(id, { id, name });
+    }
+    return Array.from(byId.values());
   }
 
   async computeMentorStats(): Promise<MentorStat[]> {

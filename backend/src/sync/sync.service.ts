@@ -45,7 +45,19 @@ export class SyncService {
         await this.snapshotsService.getYesterdaySnapshots();
 
       // 4. Save today's snapshots
-      await this.snapshotsService.saveSnapshots(stats, new Date());
+      const today = new Date();
+      await this.snapshotsService.saveSnapshots(stats, today);
+
+      // 4b. Save per-group student rosters (who-left tracking). Heavy (one Mars
+      // call per group) so it only runs here in the sync, never per-request.
+      try {
+        const groups = await this.marsService.getAllActiveGroups();
+        await this.snapshotsService.saveRosters(groups, today);
+      } catch (err) {
+        this.logger.warn(
+          `Roster save skipped (${(err as Error).message}) — continuing sync`,
+        );
+      }
 
       // 5. Upsert notification settings for new mentors
       for (const stat of stats) {

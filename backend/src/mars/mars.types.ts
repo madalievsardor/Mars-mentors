@@ -57,6 +57,12 @@ export interface MarsGroupsResponse {
   groups: MarsGroup[];
 }
 
+/** A single student in a group roster (id + display name). */
+export interface RosterStudent {
+  id: number;
+  name: string;
+}
+
 export interface MentorStat {
   id: number;
   name: string;

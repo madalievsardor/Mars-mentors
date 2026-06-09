@@ -19,29 +19,61 @@ export class NotificationsService {
   ) {}
 
   async getAllSettings(): Promise<NotificationSetting[]> {
-    return this.prisma.notificationSetting.findMany({
-      orderBy: { mentorName: 'asc' },
-    });
+    try {
+      return await this.prisma.notificationSetting.findMany({
+        orderBy: { mentorName: 'asc' },
+      });
+    } catch (err) {
+      // DB best-effort (see PrismaService.onModuleInit): if the DB is unreachable
+      // return no settings so /api/notifications/settings still answers 200
+      // instead of 500 — the page just shows an empty list.
+      this.logger.warn(
+        `Could not read notification settings (${(err as Error).message}) — returning empty`,
+      );
+      return [];
+    }
   }
 
   async updateSetting(
     mentorId: number,
     dto: UpdateNotificationSettingDto,
   ): Promise<NotificationSetting> {
-    const existing = await this.prisma.notificationSetting.findUnique({
-      where: { mentorId },
-    });
+    try {
+      const existing = await this.prisma.notificationSetting.findUnique({
+        where: { mentorId },
+      });
 
-    if (!existing) {
-      throw new NotFoundException(
-        `NotificationSetting for mentor ${mentorId} not found`,
+      if (!existing) {
+        throw new NotFoundException(
+          `NotificationSetting for mentor ${mentorId} not found`,
+        );
+      }
+
+      return await this.prisma.notificationSetting.update({
+        where: { mentorId },
+        data: dto,
+      });
+    } catch (err) {
+      // A genuine "not found" is a real 4xx — let it through.
+      if (err instanceof NotFoundException) throw err;
+      // DB best-effort: if the DB is unreachable, don't 500. Echo the requested
+      // change back so the UI stays consistent (it just won't be persisted).
+      this.logger.warn(
+        `Could not update notification setting for mentor ${mentorId} (${(err as Error).message}) — not persisted`,
       );
+      return {
+        id: 0,
+        mentorId,
+        mentorName: '',
+        branch: '',
+        enabled: dto.enabled ?? true,
+        threshold: dto.threshold ?? 30,
+        chatId: this.configService.get<string>(
+          'TELEGRAM_DEFAULT_CHAT_ID',
+          '1738593169',
+        ),
+      } as NotificationSetting;
     }
-
-    return this.prisma.notificationSetting.update({
-      where: { mentorId },
-      data: dto,
-    });
   }
 
   async upsertSettingForMentor(
@@ -49,24 +81,31 @@ export class NotificationsService {
     mentorName: string,
     branch: string,
   ): Promise<void> {
-    await this.prisma.notificationSetting.upsert({
-      where: { mentorId },
-      create: {
-        mentorId,
-        mentorName,
-        branch,
-        enabled: true,
-        threshold: 30,
-        chatId: this.configService.get<string>(
-          'TELEGRAM_DEFAULT_CHAT_ID',
-          '1738593169',
-        ),
-      },
-      update: {
-        mentorName,
-        branch,
-      },
-    });
+    try {
+      await this.prisma.notificationSetting.upsert({
+        where: { mentorId },
+        create: {
+          mentorId,
+          mentorName,
+          branch,
+          enabled: true,
+          threshold: 30,
+          chatId: this.configService.get<string>(
+            'TELEGRAM_DEFAULT_CHAT_ID',
+            '1738593169',
+          ),
+        },
+        update: {
+          mentorName,
+          branch,
+        },
+      });
+    } catch (err) {
+      // DB best-effort: skip persistence if the DB is down — don't crash sync.
+      this.logger.warn(
+        `Could not upsert notification setting for mentor ${mentorId} (${(err as Error).message}) — continuing without DB`,
+      );
+    }
   }
 
   async checkAndNotify(
@@ -120,17 +159,25 @@ export class NotificationsService {
         const sent = await this.telegram.sendMessage(chatId, alertMessage);
 
         if (sent) {
-          await this.prisma.alert.create({
-            data: {
-              type: alertType,
-              mentorId: stat.id,
-              mentorName: stat.name,
-              branch: stat.branch,
-              message: alertMessage,
-              oldCount,
-              newCount,
-            },
-          });
+          try {
+            await this.prisma.alert.create({
+              data: {
+                type: alertType,
+                mentorId: stat.id,
+                mentorName: stat.name,
+                branch: stat.branch,
+                message: alertMessage,
+                oldCount,
+                newCount,
+              },
+            });
+          } catch (err) {
+            // DB best-effort: the alert was already sent to Telegram; if the DB
+            // is down we just can't log it — don't crash the notify run.
+            this.logger.warn(
+              `Could not persist alert for mentor ${stat.name} (${(err as Error).message}) — continuing`,
+            );
+          }
 
           this.logger.log(
             `Alert sent for mentor ${stat.name}: ${alertType}`,

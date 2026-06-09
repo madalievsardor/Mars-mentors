@@ -25,6 +25,24 @@ model MentorSnapshot {
   @@map("mentor_snapshots")
 }
 
+/// One row per (date, group): the full student roster of a group on that day.
+/// Used to detect exactly WHICH student left when a mentor's student count drops,
+/// by diffing the two most recent roster snapshots of a group.
+model GroupRosterSnapshot {
+  id         Int      @id @default(autoincrement())
+  date       DateTime @db.Date
+  groupId    Int
+  groupName  String
+  mentorId   Int
+  mentorName String
+  branch     String
+  students   Json // [{ id: number, name: string }]
+  createdAt  DateTime @default(now())
+
+  @@unique([date, groupId])
+  @@map("group_roster_snapshots")
+}
+
 model NotificationSetting {
   id         Int     @id @default(autoincrement())
   mentorId   Int     @unique

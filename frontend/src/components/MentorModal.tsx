@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { X, Clock, BookOpen, Users, TrendingUp } from 'lucide-react'
+import { X, Clock, BookOpen, Users, TrendingUp, UserMinus } from 'lucide-react'
 import {
   LineChart,
   Line,
@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { useMentorHistory } from '../hooks/useQueries'
+import { useMentorHistory, useMentorLeftStudents } from '../hooks/useQueries'
 import LoadingSpinner from './LoadingSpinner'
 import type { Mentor } from '../types'
 
@@ -54,6 +54,8 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 export default function MentorModal({ mentor, onClose }: MentorModalProps) {
   const { t } = useTranslation()
   const { data: history, isLoading } = useMentorHistory(mentor.id)
+  const { data: leftData, isLoading: leftLoading } = useMentorLeftStudents(mentor.id)
+  const leftStudents = leftData?.leftStudents ?? []
   const dialogRef = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
@@ -169,6 +171,50 @@ export default function MentorModal({ mentor, onClose }: MentorModalProps) {
             </div>
           ) : (
             <p className="text-slate-600 text-sm text-center py-6">{t('modal.noGroups')}</p>
+          )}
+        </div>
+
+        {/* Left students */}
+        <div className="px-6 pb-2">
+          <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+            <UserMinus size={14} className="text-red-400" />
+            {t('modal.leftStudents')}
+            {leftStudents.length > 0 && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/25">
+                {t('modal.leftCount', { count: leftStudents.length })}
+              </span>
+            )}
+          </h4>
+          {leftLoading ? (
+            <LoadingSpinner size="sm" />
+          ) : leftStudents.length > 0 ? (
+            <div className="space-y-2">
+              {leftStudents.map((s) => (
+                <div
+                  key={`${s.studentId}-${s.groupName}`}
+                  className="flex items-center justify-between bg-red-500/[0.05] border border-red-500/15 rounded-xl px-4 py-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                      <UserMinus size={12} className="text-red-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-slate-200 text-sm font-medium truncate">{s.name}</p>
+                      <p className="text-slate-600 text-xs truncate">{s.groupName}</p>
+                    </div>
+                  </div>
+                  <span className="text-slate-500 text-xs flex-shrink-0 ml-3">
+                    {t('modal.leftSince', { date: s.lastSeenDate })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-6 text-center">
+              <p className="text-slate-600 text-sm">
+                {leftData ? t('modal.noLeft') : t('modal.leftCollecting')}
+              </p>
+            </div>
           )}
         </div>
 

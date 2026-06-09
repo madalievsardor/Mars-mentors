@@ -55,6 +55,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.marsAuth;
   }
 
+  get groupRosterSnapshot() {
+    return this.client.groupRosterSnapshot;
+  }
+
   async $transaction<T>(
     fn: (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>) => Promise<T>,
   ): Promise<T> {
