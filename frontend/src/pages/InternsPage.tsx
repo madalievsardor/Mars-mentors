@@ -22,15 +22,49 @@ import {
   Gift,
   AlertTriangle,
   Crown,
+  TrendingUp,
+  TrendingDown,
+  Minus,
 } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
-import { useInterns, useInternDetail } from '../hooks/useQueries'
+import { useInterns, useInternDetail, useMentors } from '../hooks/useQueries'
 import { useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS } from '../hooks/useQueries'
 import StatCard from '../components/StatCard'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
+import {
+  getGradeRec,
+  getMonthsElapsed,
+  needToStay,
+  needToUp,
+  resolveName,
+  normalizeName,
+  CYCLE_MONTHS,
+  type GradeRec,
+} from '../utils/grade'
 import type { MentorInterns, InternDetail } from '../types'
+
+// Grade-recommendation badge styling (intern % of total students). Mirrors the
+// indicator that used to live on the Mentors page; pure indicator, does not
+// change the real grade.
+const GRADE_REC_CONFIG: Record<GradeRec, { badgeClass: string; Icon: typeof TrendingUp; labelKey: string }> = {
+  up: {
+    badgeClass: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25',
+    Icon: TrendingUp,
+    labelKey: 'mentors.gradeUp',
+  },
+  stay: {
+    badgeClass: 'bg-slate-500/15 text-slate-400 border border-slate-500/20',
+    Icon: Minus,
+    labelKey: 'mentors.gradeStay',
+  },
+  down: {
+    badgeClass: 'bg-red-500/15 text-red-300 border border-red-500/25',
+    Icon: TrendingDown,
+    labelKey: 'mentors.gradeDown',
+  },
+}
 
 // Grade → colour. Keys are the int-server camelCase grade ids.
 const GRADE_STYLE: Record<string, string> = {
@@ -77,9 +111,13 @@ type MentorFilter = (typeof MENTOR_FILTERS)[number]
 
 function MentorRow({
   mentor,
+  studentCount,
   onSelect,
 }: {
   mentor: MentorInterns
+  // Mars student count matched by name, or null when this int-server mentor
+  // can't be bridged to a Mars mentor (then no grade recommendation is shown).
+  studentCount: number | null
   onSelect: (id: string) => void
 }) {
   const { t } = useTranslation()
@@ -93,6 +131,15 @@ function MentorRow({
         : mentor.internCount >= 6
           ? 'border-l-amber-500'
           : 'border-l-emerald-500'
+
+  // Grade recommendation: only when a Mars student count is matched and > 0.
+  const showGradeRec = studentCount !== null && studentCount > 0
+  const internPct = showGradeRec ? (mentor.internCount / studentCount) * 100 : 0
+  const gradeRec = showGradeRec ? getGradeRec(internPct) : null
+  const recCfg = gradeRec ? GRADE_REC_CONFIG[gradeRec] : null
+  const monthsElapsed = getMonthsElapsed()
+  const stayCount = showGradeRec ? needToStay(studentCount) : 0
+  const upCount = showGradeRec ? needToUp(studentCount) : 0
 
   return (
     <div className={`bg-[#161b27] border border-white/[0.06] border-l-2 ${heat} rounded-2xl overflow-hidden`}>
@@ -135,6 +182,23 @@ function MentorRow({
           <ChevronDown size={16} className={`text-slate-600 transition-transform ${open ? 'rotate-180' : ''}`} />
         </div>
       </button>
+
+      {/* Grade recommendation (indicator only) — shown when the int-server mentor
+          is bridged by name to a Mars mentor with students. */}
+      {recCfg && gradeRec && (
+        <div className="px-4 pb-3.5 -mt-1.5 flex flex-col sm:flex-row sm:items-center gap-x-3 gap-y-1.5">
+          <span
+            title={t('mentors.gradeRec')}
+            className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full w-fit ${recCfg.badgeClass}`}
+          >
+            <recCfg.Icon size={11} />
+            {internPct.toFixed(1)}% · {t(recCfg.labelKey)} · {t('mentors.cycleProgress', { elapsed: monthsElapsed, total: CYCLE_MONTHS })}
+          </span>
+          <p className="text-slate-500 text-[11px] leading-snug">
+            {t('mentors.now')} {mentor.internCount} · {t('mentors.needToStay')} ≥{stayCount} · {t('mentors.needToUp')} ≥{upCount}
+          </p>
+        </div>
+      )}
 
       {open && (
         <div className="px-4 pb-4 pt-1 border-t border-white/[0.05]">
@@ -439,6 +503,7 @@ function InternDetailModal({ id, onClose }: { id: string; onClose: () => void })
 export default function InternsPage() {
   const { t } = useTranslation()
   const { data, isLoading, isError, error, refetch } = useInterns()
+  const { data: marsMentors } = useMentors()
   const [selectedInternId, setSelectedInternId] = useState<string | null>(null)
   const queryClient = useQueryClient()
   // When navigated here from a mentor card (Mentors page), pre-fill the search.
@@ -463,6 +528,27 @@ export default function InternsPage() {
     }
     return Array.from(set).sort((a, b) => a.localeCompare(b))
   }, [data])
+
+  // Bridge each int-server mentor (by normalized name) to a Mars mentor's student
+  // count, so we can compute the grade recommendation (interns / students).
+  // EXACT → MANUAL → FUZZY ≤ 3, mirroring the Mentors page. Keyed by normalized
+  // int-server mentor name → Mars student count.
+  const studentCountByName = useMemo(() => {
+    const studentByNorm = new Map<string, number>()
+    for (const m of marsMentors ?? []) {
+      studentByNorm.set(normalizeName(m.name), m.studentCount)
+    }
+    const marsNorms = Array.from(studentByNorm.keys())
+
+    const resolved = new Map<string, number>()
+    for (const m of data?.mentors ?? []) {
+      const matched = resolveName(m.mentorName, marsNorms)
+      if (matched !== null) {
+        resolved.set(normalizeName(m.mentorName), studentByNorm.get(matched)!)
+      }
+    }
+    return resolved
+  }, [marsMentors, data])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -663,7 +749,12 @@ export default function InternsPage() {
       {data && filtered.length > 0 && (
         <div className="space-y-2.5">
           {filtered.map((m) => (
-            <MentorRow key={m.mentorId} mentor={m} onSelect={setSelectedInternId} />
+            <MentorRow
+              key={m.mentorId}
+              mentor={m}
+              studentCount={studentCountByName.get(normalizeName(m.mentorName)) ?? null}
+              onSelect={setSelectedInternId}
+            />
           ))}
         </div>
       )}

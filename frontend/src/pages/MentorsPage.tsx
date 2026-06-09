@@ -6,21 +6,10 @@ import { useMentors, useInterns } from '../hooks/useQueries'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import MentorModal from '../components/MentorModal'
+import { normalizeName, resolveName } from '../utils/grade'
 import type { Mentor, MentorGrade } from '../types'
 
 const STUDENT_GOOD = 25
-
-// Grade is evaluated on a 6-month cycle. Easy to change here when a new cycle
-// starts. Current cycle: 1 Apr 2026 → 1 Oct 2026.
-const CYCLE_START = new Date('2026-04-01')
-const CYCLE_MONTHS = 6
-
-// Whole months elapsed since the cycle start, clamped to 0..CYCLE_MONTHS.
-function getMonthsElapsed(): number {
-  const now = new Date()
-  const months = Math.floor((now.getTime() - CYCLE_START.getTime()) / (30.44 * 24 * 60 * 60 * 1000))
-  return Math.max(0, Math.min(CYCLE_MONTHS, months))
-}
 
 function getMentorTier(mentor: Mentor): 'good' | 'average' | 'decreased' {
   if (mentor.trend === 'down') return 'decreased'
@@ -70,34 +59,6 @@ const gradeBadgeMap: Record<MentorGrade, string> = {
   junior: 'bg-slate-500/10 text-slate-400 border border-slate-500/20',
 }
 
-type GradeRec = 'up' | 'stay' | 'down'
-
-// Grade recommendation thresholds (intern percentage of total students).
-// < 7% → grade should go down; 7–12% → stays; > 12% → should go up.
-function getGradeRec(internPct: number): GradeRec {
-  if (internPct < 7) return 'down'
-  if (internPct > 12) return 'up'
-  return 'stay'
-}
-
-const gradeRecConfig: Record<GradeRec, { badgeClass: string; Icon: typeof TrendingUp; labelKey: string }> = {
-  up: {
-    badgeClass: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25',
-    Icon: TrendingUp,
-    labelKey: 'mentors.gradeUp',
-  },
-  stay: {
-    badgeClass: 'bg-slate-500/15 text-slate-400 border border-slate-500/20',
-    Icon: Minus,
-    labelKey: 'mentors.gradeStay',
-  },
-  down: {
-    badgeClass: 'bg-red-500/15 text-red-300 border border-red-500/25',
-    Icon: TrendingDown,
-    labelKey: 'mentors.gradeDown',
-  },
-}
-
 type SortOption = 'students-desc' | 'students-asc' | 'name' | 'groups-desc'
 
 function sortMentors(mentors: Mentor[], sort: SortOption): Mentor[] {
@@ -136,28 +97,13 @@ function MentorCard({
       ? t('mentors.tierAverage')
       : t('mentors.tierDecreased')
 
-  // Grade recommendation: only when intern count is matched (a real number, not
-  // "—"/null) AND the mentor actually has students. Pure indicator — does not
-  // change the real grade.
-  const showGradeRec = internCount !== null && mentor.studentCount > 0
-  const internPct = showGradeRec ? (internCount / mentor.studentCount) * 100 : 0
-  const gradeRec = showGradeRec ? getGradeRec(internPct) : null
-  const recCfg = gradeRec ? gradeRecConfig[gradeRec] : null
-  const monthsElapsed = getMonthsElapsed()
-
-  // Required intern counts derived from the grade thresholds (7% / >12%):
-  // - needToStay: minimum interns so the grade does NOT drop (≥7%).
-  // - needToUp:   minimum interns so the grade can go UP (>12%).
-  const needToStay = showGradeRec ? Math.ceil(mentor.studentCount * 0.07) : 0
-  const needToUp = showGradeRec ? Math.floor(mentor.studentCount * 0.12) + 1 : 0
-
   return (
     <div
       role="button"
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
-      className={`rounded-2xl p-5 cursor-pointer transition-all duration-200 animate-slide-up select-none outline-none [-webkit-tap-highlight-color:transparent] ${cfg.cardClass}`}
+      className={`h-full flex flex-col rounded-2xl p-5 cursor-pointer transition-all duration-200 animate-slide-up select-none outline-none [-webkit-tap-highlight-color:transparent] ${cfg.cardClass}`}
     >
       {/* Top row */}
       <div className="flex items-start justify-between mb-4">
@@ -232,83 +178,18 @@ function MentorCard({
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        {mentor.trend === 'down' && mentor.prevStudentCount !== null && (
-          <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1">
-            <TrendingDown size={10} />
-            {t('mentors.decreased', { count: mentor.prevStudentCount - mentor.studentCount })}
-          </p>
-        )}
       </div>
 
-      {/* Grade recommendation (indicator only) */}
-      {recCfg && gradeRec && (
-        <div className="mt-4 pt-3 border-t border-white/[0.06]">
-          <span
-            title={t('mentors.gradeRec')}
-            className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full w-fit ${recCfg.badgeClass}`}
-          >
-            <recCfg.Icon size={11} />
-            {internPct.toFixed(1)}% · {t(recCfg.labelKey)} · {t('mentors.cycleProgress', { elapsed: monthsElapsed, total: CYCLE_MONTHS })}
-          </span>
-          <p className="text-slate-400 text-[11px] leading-snug mt-2">
-            {t('mentors.now')} {internCount} · {t('mentors.needToStay')} ≥{needToStay} · {t('mentors.needToUp')} ≥{needToUp}
-          </p>
+      {/* "Decreased" row — clear, standalone, red. Stays visible alongside the
+          tier badge above. */}
+      {mentor.trend === 'down' && mentor.prevStudentCount !== null && (
+        <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-red-500/10 border border-red-500/20 px-2.5 py-1.5 text-red-400 text-xs font-semibold">
+          <TrendingDown size={12} className="flex-shrink-0" />
+          {t('mentors.decreased', { count: mentor.prevStudentCount - mentor.studentCount })}
         </div>
       )}
     </div>
   )
-}
-
-// Normalize a name for cross-system matching. The same mentor can be written
-// differently across Mars and int-server, e.g. "Ibrohim Tolqinov" vs
-// "Ibrohim To'lqinov". We lowercase, strip every apostrophe variant, and drop
-// all non-alphanumeric characters so only letters/digits remain. Result:
-// "Ibrohim To'lqinov" → "ibrohimtolqinov" === "Ibrohim Tolqinov" → match.
-function normalizeName(name: string): string {
-  return name
-    .toLowerCase()
-    // Remove Uzbek/ASCII apostrophe + accent variants outright (so they don't
-    // become a separating boundary): ʻ ‘ ’ ʼ ` ´ '
-    .replace(/[ʻ‘’ʼ`´']/g, '')
-    // Drop everything that isn't a basic latin letter or digit (spaces, dots,
-    // commas, dashes, any leftover punctuation).
-    .replace(/[^a-z0-9]/g, '')
-}
-
-// Levenshtein edit distance between two strings. Used as a fuzzy fallback when
-// the normalized names aren't byte-identical but clearly refer to the same
-// person (e.g. "Abbosxon Xamidov" vs "Abbos Xamidov" → distance 2).
-function levenshtein(a: string, b: string): number {
-  if (a === b) return 0
-  if (a.length === 0) return b.length
-  if (b.length === 0) return a.length
-  let prev = Array.from({ length: b.length + 1 }, (_, i) => i)
-  let curr = new Array<number>(b.length + 1)
-  for (let i = 1; i <= a.length; i++) {
-    curr[0] = i
-    for (let j = 1; j <= b.length; j++) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1
-      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost)
-    }
-    ;[prev, curr] = [curr, prev]
-  }
-  return prev[b.length]
-}
-
-// Max edit distance (on normalized full names) at which a fuzzy match is still
-// accepted as the same person.
-const FUZZY_MAX_DISTANCE = 3
-
-// Hand-curated map for people the fuzzy matcher can't catch — name/surname
-// order swapped, or a spelling gap too large for distance ≤ 3. Keyed by
-// normalized Mars name → normalized int-server name. Applied after exact/fuzzy.
-const MANUAL_MAP: Record<string, string> = {
-  // "Emirxan Ertan" (Mars) ↔ "Ertan Emirhan" (int) — first/last name swapped
-  [normalizeName('Emirxan Ertan')]: normalizeName('Ertan Emirhan'),
-  // "Islomjon Shaxobiddinov" (Mars) ↔ "Islom Shahobiddinov" (int)
-  [normalizeName('Islomjon Shaxobiddinov')]: normalizeName('Islom Shahobiddinov'),
-  // "Jamshidbek Saminjonov" (Mars) ↔ "Jamshid Salimjonov" (int)
-  [normalizeName('Jamshidbek Saminjonov')]: normalizeName('Jamshid Salimjonov'),
 }
 
 export default function MentorsPage() {
@@ -320,8 +201,7 @@ export default function MentorsPage() {
 
   // Resolve each Mars mentor (by normalized name) to an int-server intern count.
   // Mars mentor IDs differ from int-server IDs, so we bridge the two systems by
-  // name in three stages: EXACT (normalized equality) → FUZZY (Levenshtein ≤ 3,
-  // closest int mentor, no ambiguous ties) → MANUAL (hand-curated overrides).
+  // name via the shared resolver (EXACT → MANUAL → FUZZY ≤ 3).
   const internCountByName = useMemo(() => {
     // Normalized int-server name → intern count.
     const internByNorm = new Map<string, number>()
@@ -332,38 +212,9 @@ export default function MentorsPage() {
 
     const resolved = new Map<string, number>()
     for (const mentor of mentors ?? []) {
-      const marsNorm = normalizeName(mentor.name)
-
-      // 1. EXACT.
-      if (internByNorm.has(marsNorm)) {
-        resolved.set(marsNorm, internByNorm.get(marsNorm)!)
-        continue
-      }
-
-      // 2. MANUAL override (checked before fuzzy to avoid accidental fuzzy hits).
-      const manualTarget = MANUAL_MAP[marsNorm]
-      if (manualTarget && internByNorm.has(manualTarget)) {
-        resolved.set(marsNorm, internByNorm.get(manualTarget)!)
-        continue
-      }
-
-      // 3. FUZZY: closest int mentor within FUZZY_MAX_DISTANCE. Skip ambiguous
-      // ties (two int mentors equally close) to avoid false positives.
-      let bestDist = FUZZY_MAX_DISTANCE + 1
-      let bestNorm: string | null = null
-      let tie = false
-      for (const intNorm of internNorms) {
-        const d = levenshtein(marsNorm, intNorm)
-        if (d < bestDist) {
-          bestDist = d
-          bestNorm = intNorm
-          tie = false
-        } else if (d === bestDist) {
-          tie = true
-        }
-      }
-      if (bestNorm && bestDist <= FUZZY_MAX_DISTANCE && !tie) {
-        resolved.set(marsNorm, internByNorm.get(bestNorm)!)
+      const matched = resolveName(mentor.name, internNorms)
+      if (matched !== null) {
+        resolved.set(normalizeName(mentor.name), internByNorm.get(matched)!)
       }
     }
     return resolved
