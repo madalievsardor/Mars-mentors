@@ -130,6 +130,8 @@
     "refreshing": "Yangilanmoqda...",
     "loading": "Internlar yuklanmoqda...",
     "loadError": "Internlarni yuklashda xatolik (int-server javob bermayapti)",
+    "waking": "Server uyg'onmoqda...",
+    "wakingHint": "Intern serveri uyqudan turyapti, ma'lumot bir necha soniyada o'zi yuklanadi.",
     "noResults": "Mentor topilmadi",
     "noData": "Hozircha intern ma'lumoti yo'q",
     "showInterns": "Internlarni ko'rsatish",

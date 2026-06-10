@@ -504,6 +504,10 @@ export default function InternsPage() {
   const { t } = useTranslation()
   const { data, isLoading, isError, error, refetch } = useInterns()
   const { data: marsMentors } = useMentors()
+  // Data arrived but int-server is still waking (Render cold start): show a
+  // banner instead of misleading zeros; useInterns keeps polling until ready.
+  const waking = !!data && !data.available
+  const ready = !!data && data.available
   const [selectedInternId, setSelectedInternId] = useState<string | null>(null)
   const queryClient = useQueryClient()
   // When navigated here from a mentor card (Mentors page), pre-fill the search.
@@ -627,8 +631,19 @@ export default function InternsPage() {
         </button>
       </div>
 
+      {/* int-server waking up (Render cold start) — auto-retrying */}
+      {waking && (
+        <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/25 rounded-2xl px-4 py-3.5">
+          <RefreshCw size={16} className="text-amber-300 animate-spin flex-shrink-0" />
+          <div>
+            <p className="text-amber-200 text-sm font-semibold">{t('interns.waking')}</p>
+            <p className="text-amber-300/70 text-xs mt-0.5">{t('interns.wakingHint')}</p>
+          </div>
+        </div>
+      )}
+
       {/* Stats */}
-      {data && (
+      {ready && (
         <div className="stats stats-vertical sm:stats-horizontal w-full bg-transparent gap-3">
           <StatCard title={t('interns.totalInterns')} value={data.totalInterns} icon={GraduationCap} color="emerald" />
           <StatCard title={t('interns.withInterns')} value={data.mentorsWithInterns} icon={UserCheck} color="blue" />
@@ -639,7 +654,7 @@ export default function InternsPage() {
       )}
 
       {/* Grade distribution */}
-      {data && (
+      {ready && (
         <div className="bg-[#161b27] border border-white/[0.06] rounded-2xl p-4">
           <p className="text-xs text-slate-600 uppercase tracking-wider font-semibold mb-3">{t('interns.gradeDist')}</p>
           <div className="flex flex-wrap gap-2">
@@ -655,7 +670,7 @@ export default function InternsPage() {
       )}
 
       {/* Search */}
-      {data && (
+      {ready && (
         <div className="relative">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600" />
           <input
@@ -668,7 +683,7 @@ export default function InternsPage() {
       )}
 
       {/* Status filter */}
-      {data && (
+      {ready && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-slate-600 uppercase tracking-wider font-semibold mr-1">
             {t('interns.statusFilter')}
@@ -746,7 +761,7 @@ export default function InternsPage() {
       )}
 
       {/* List */}
-      {data && filtered.length > 0 && (
+      {ready && filtered.length > 0 && (
         <div className="space-y-2.5">
           {filtered.map((m) => (
             <MentorRow
@@ -759,7 +774,7 @@ export default function InternsPage() {
         </div>
       )}
 
-      {data && filtered.length === 0 && (
+      {ready && filtered.length === 0 && (
         <div className="bg-[#161b27] border border-white/[0.06] rounded-2xl flex flex-col items-center py-16 gap-3">
           <GraduationCap size={36} className="text-slate-700" />
           <p className="text-slate-600">

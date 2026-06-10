@@ -121,6 +121,22 @@ export class IntServerService {
     }
   }
 
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * True when the error looks like a Render free-tier cold start rather than a
+   * real failure: no response at all (network error / timeout) or a gateway
+   * status returned while the service is still waking up.
+   */
+  private isColdStart(err: unknown): boolean {
+    if (!axios.isAxiosError(err)) return false;
+    if (!err.response) return true; // ECONNABORTED timeout or network error
+    const s = err.response.status;
+    return s === 502 || s === 503 || s === 504;
+  }
+
   private async requestWithRetry<T>(
     fn: (headers: Record<string, string>) => Promise<T>,
   ): Promise<T> {
@@ -128,18 +144,43 @@ export class IntServerService {
     const headers = (): Record<string, string> => ({
       Authorization: `Bearer ${this.accessToken}`,
     });
-    try {
-      return await fn(headers());
-    } catch (err: unknown) {
-      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
-      if (status === 401 || status === 403) {
-        // Token rejected — force a fresh login and retry once.
-        this.accessToken = '';
-        const ok = await this.login();
-        if (ok) return fn(headers());
+
+    // int-server runs on Render's free tier: after ~15 min idle it sleeps, and
+    // the first hit can take ~50s to wake — returning 502/503/504 or timing out
+    // meanwhile. Retry those a few times (with backoff) so a cold start surfaces
+    // as a slightly slow response, not a 500.
+    const MAX_ATTEMPTS = 3;
+    let reloggedIn = false;
+    let lastErr: unknown;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        return await fn(headers());
+      } catch (err: unknown) {
+        lastErr = err;
+        const status = axios.isAxiosError(err)
+          ? err.response?.status
+          : undefined;
+
+        // Token rejected — force one fresh login and retry immediately.
+        if ((status === 401 || status === 403) && !reloggedIn) {
+          reloggedIn = true;
+          this.accessToken = '';
+          await this.login();
+          continue;
+        }
+
+        if (this.isColdStart(err) && attempt < MAX_ATTEMPTS) {
+          this.logger.warn(
+            `int-server cold start (attempt ${attempt}/${MAX_ATTEMPTS}) — retrying`,
+          );
+          await this.sleep(attempt * 3000); // 3s, then 6s
+          continue;
+        }
+
+        throw err;
       }
-      throw err;
     }
+    throw lastErr;
   }
 
   async getMentors(): Promise<IntMentor[]> {

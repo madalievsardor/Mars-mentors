@@ -7,6 +7,7 @@ import {
   InternDetail,
   InternMentorLink,
   IntLessonVisited,
+  IntMentor,
 } from './interns.types';
 
 @Injectable()
@@ -23,6 +24,22 @@ export class InternsService {
   invalidateCache(): void {
     this.cached = null;
     this.loadedAt = 0;
+  }
+
+  /** Returned when int-server is unreachable (cold start / outage). Empty but
+   *  valid so the page degrades gracefully instead of throwing a 500. */
+  private emptySummary(): InternsSummary {
+    return {
+      available: false,
+      totalInterns: 0,
+      totalMentors: 0,
+      mentorsWithInterns: 0,
+      mentorsWithoutInterns: 0,
+      unassignedInterns: 0,
+      gradeDistribution: {},
+      statusDistribution: {},
+      mentors: [],
+    };
   }
 
   /** Distinct mentors linked to an intern via its branches[].mentor entries. */
@@ -159,10 +176,24 @@ export class InternsService {
       return this.cached;
     }
 
-    const [interns, mentors] = await Promise.all([
-      this.intServer.getInterns(),
-      this.intServer.getMentors(),
-    ]);
+    let interns: IntIntern[];
+    let mentors: IntMentor[];
+    try {
+      [interns, mentors] = await Promise.all([
+        this.intServer.getInterns(),
+        this.intServer.getMentors(),
+      ]);
+    } catch (err: unknown) {
+      // int-server unreachable (cold start / outage). Return an empty summary
+      // (HTTP 200) so the page never 500s, and do NOT cache it — the next
+      // request retries once Render has woken the service back up.
+      this.logger.error(
+        `int-server unavailable — returning empty summary: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+      return this.emptySummary();
+    }
 
     const mentorMap = new Map<string, MentorInterns>();
     const gradeDistribution: Record<string, number> = {};
@@ -238,6 +269,7 @@ export class InternsService {
     );
 
     const summary: InternsSummary = {
+      available: true,
       totalInterns: interns.length,
       totalMentors: mentors.length,
       mentorsWithInterns: withInternsCount,

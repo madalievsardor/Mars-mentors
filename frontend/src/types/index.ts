@@ -91,6 +91,9 @@ export interface MentorInterns {
 }
 
 export interface InternsSummary {
+  /** False when int-server is still waking (Render cold start) — fields are
+   *  empty and the client keeps polling until it flips true. */
+  available: boolean;
   totalInterns: number;
   totalMentors: number;
   mentorsWithInterns: number;

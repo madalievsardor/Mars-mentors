@@ -130,6 +130,8 @@
     "refreshing": "Refreshing...",
     "loading": "Loading interns...",
     "loadError": "Failed to load interns (int-server not responding)",
+    "waking": "Server is waking up...",
+    "wakingHint": "The intern server was asleep; data will load automatically in a few seconds.",
     "noResults": "No mentor found",
     "noData": "No intern data yet",
     "showInterns": "Show interns",

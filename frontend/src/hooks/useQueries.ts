@@ -27,8 +27,12 @@ export const useInterns = () =>
     queryKey: QUERY_KEYS.interns,
     queryFn: getInternsSummary,
     staleTime: 5 * 60 * 1000,
-    refetchInterval: 5 * 60 * 1000,
+    // While int-server is still waking (available === false), poll every 8s so
+    // the page fills in by itself; once it's up, fall back to the 5-min refresh.
+    refetchInterval: (query) =>
+      query.state.data && !query.state.data.available ? 8000 : 5 * 60 * 1000,
     refetchOnWindowFocus: false,
+    retry: 2,
   });
 
 export const useInternDetail = (id: string | null) =>

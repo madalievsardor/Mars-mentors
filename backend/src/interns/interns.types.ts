@@ -111,6 +111,9 @@ export interface MentorInterns {
 }
 
 export interface InternsSummary {
+  /** False when int-server could not be reached (e.g. Render free-tier cold
+   *  start) — the rest of the fields are empty and the client should retry. */
+  available: boolean;
   totalInterns: number;
   totalMentors: number;
   mentorsWithInterns: number;
