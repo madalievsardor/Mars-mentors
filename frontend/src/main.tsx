@@ -8,6 +8,7 @@ import Layout from './components/Layout'
 import DashboardPage from './pages/DashboardPage'
 import MentorsPage from './pages/MentorsPage'
 import InternsPage from './pages/InternsPage'
+import TutorsPage from './pages/TutorsPage'
 import NotificationsPage from './pages/NotificationsPage'
 import LoginPage from './pages/LoginPage'
 import { AuthContext, useAuth, useAuthState } from './hooks/useAuth'
@@ -38,6 +39,9 @@ function AppRoutes() {
         <Route index element={<DashboardPage />} />
         <Route path="mentors" element={<MentorsPage />} />
         <Route path="interns" element={<InternsPage />} />
+        <Route path="tutors" element={<TutorsPage />} />
+        {/* Backwards-compat: old /schedule path now points at Tutors. */}
+        <Route path="schedule" element={<Navigate to="/tutors" replace />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

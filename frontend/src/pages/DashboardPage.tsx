@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { Users, BookOpen, GraduationCap, Building2, RefreshCw, Clock, TrendingUp } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+  LineChart, Line, Legend,
 } from 'recharts'
-import { useDashboard, useTriggerSync } from '../hooks/useQueries'
+import { useDashboard, useDashboardTimeline, useTriggerSync } from '../hooks/useQueries'
 import StatCard from '../components/StatCard'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
@@ -36,6 +37,18 @@ const statusConfig = {
     progress: 'bg-gradient-to-r from-red-500 to-rose-500',
   },
 }
+
+// Clean, distinct, bright-on-dark palette — one solid line per branch.
+const TIMELINE_COLORS = [
+  '#6366f1', // indigo
+  '#22d3ee', // cyan
+  '#34d399', // emerald
+  '#fbbf24', // amber
+  '#fb7185', // rose
+  '#a78bfa', // violet
+  '#38bdf8', // sky
+  '#f472b6', // pink
+]
 
 interface CustomBarTooltipProps {
   active?: boolean
@@ -154,12 +167,131 @@ function FilialTableRow({ filial }: { filial: FilialOverview }) {
   )
 }
 
+// Pure timeline line chart body — rendered inside the chart toggle card.
+// Returns null when there's no historical data so the toggle can fall back.
+function TimelineChartBody() {
+  const { t } = useTranslation()
+  const { data, isLoading } = useDashboardTimeline()
+
+  if (isLoading || !data || !data.available || data.points.length === 0) {
+    return (
+      <div className="h-[340px] flex items-center justify-center text-slate-600 text-sm">
+        {t('dashboard.noData')}
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <p className="text-slate-600 text-xs mb-6">{t('dashboard.timelineSubtitle')}</p>
+      <ResponsiveContainer width="100%" height={340}>
+        <LineChart data={data.points} margin={{ top: 8, right: 16, left: -12, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+          <XAxis
+            dataKey="date"
+            tick={{ fill: '#475569', fontSize: 10 }}
+            tickLine={false}
+            axisLine={false}
+            minTickGap={24}
+          />
+          <YAxis
+            tick={{ fill: '#475569', fontSize: 10 }}
+            tickLine={false}
+            axisLine={false}
+            width={40}
+          />
+          <Tooltip
+            contentStyle={{
+              background: '#0f1420',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 12,
+              fontSize: 12,
+            }}
+            labelStyle={{ color: '#cbd5e1', fontWeight: 600, marginBottom: 4 }}
+            itemStyle={{ padding: '1px 0' }}
+            cursor={{ stroke: 'rgba(255,255,255,0.12)', strokeWidth: 1 }}
+          />
+          <Legend
+            verticalAlign="middle"
+            align="right"
+            layout="vertical"
+            iconType="plainline"
+            wrapperStyle={{ fontSize: 12, paddingLeft: 16, color: '#94a3b8' }}
+          />
+          {data.branches.map((branch, i) => (
+            <Line
+              key={branch}
+              type="monotone"
+              dataKey={branch}
+              name={branch}
+              stroke={TIMELINE_COLORS[i % TIMELINE_COLORS.length]}
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4 }}
+              isAnimationActive
+              animationDuration={1200}
+              connectNulls
+            />
+          ))}
+        </LineChart>
+      </ResponsiveContainer>
+    </>
+  )
+}
+
+// Pure comparison bar chart body — rendered inside the chart toggle card.
+function ComparisonChartBody({ chartData }: { chartData: (FilialOverview & { name: string })[] | undefined }) {
+  const { t } = useTranslation()
+  return (
+    <>
+      <ResponsiveContainer width="100%" height={340}>
+        <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} barGap={4}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+          <XAxis
+            dataKey="name"
+            tick={{ fill: '#475569', fontSize: 10 }}
+            tickLine={false}
+            axisLine={false}
+          />
+          <YAxis
+            tick={{ fill: '#475569', fontSize: 10 }}
+            tickLine={false}
+            axisLine={false}
+          />
+          <Tooltip content={<CustomBarTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+          <Bar dataKey="mentorCount" name={t('dashboard.mentors')} radius={[4, 4, 0, 0]}>
+            {chartData?.map((_entry, i) => (
+              <Cell key={i} fill="#6366f1" fillOpacity={0.8} />
+            ))}
+          </Bar>
+          <Bar dataKey="groupCount" name={t('dashboard.groups')} radius={[4, 4, 0, 0]}>
+            {chartData?.map((_entry, i) => (
+              <Cell key={i} fill="#a78bfa" fillOpacity={0.6} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+      <div className="flex items-center gap-5 mt-4 justify-center">
+        <span className="flex items-center gap-2 text-xs text-slate-500">
+          <span className="w-3 h-3 rounded-sm bg-indigo-500 inline-block" />
+          {t('dashboard.mentors')}
+        </span>
+        <span className="flex items-center gap-2 text-xs text-slate-500">
+          <span className="w-3 h-3 rounded-sm bg-violet-400 inline-block" />
+          {t('dashboard.groups')}
+        </span>
+      </div>
+    </>
+  )
+}
+
 export default function DashboardPage() {
   const { t, i18n } = useTranslation()
   const { data: filials, isLoading, isError, error, refetch } = useDashboard()
   const syncMutation = useTriggerSync()
   const [lastSync, setLastSync] = useState<string | null>(null)
   const [syncError, setSyncError] = useState(false)
+  const [chartMode, setChartMode] = useState<'comparison' | 'timeline'>('comparison')
 
   const localeCode = useMemo(() => {
     if (i18n.language === 'uz') return 'uz-UZ'
@@ -252,49 +384,40 @@ export default function DashboardPage() {
       {/* Chart + Filials */}
       {filials && filials.length > 0 && (
         <>
-          {/* Bar Chart */}
+          {/* Chart card with toggle: comparison bar chart (default) / timeline line chart */}
           <div className="bg-[#161b27] border border-white/[0.06] rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <TrendingUp size={16} className="text-indigo-400" />
-              <h2 className="font-semibold text-slate-200 text-sm">{t('dashboard.chartTitle')}</h2>
+            <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+              <div className="flex items-center gap-2">
+                <TrendingUp size={16} className="text-indigo-400" />
+                <h2 className="font-semibold text-slate-200 text-sm">
+                  {chartMode === 'comparison' ? t('dashboard.chartTitle') : t('dashboard.timelineTitle')}
+                </h2>
+              </div>
+              {/* Toggle — segmented control (only one chart shows at a time) */}
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                {(['comparison', 'timeline'] as const).map((mode) => {
+                  const active = chartMode === mode
+                  return (
+                    <button
+                      key={mode}
+                      onClick={() => setChartMode(mode)}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                        active
+                          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {mode === 'comparison' ? t('dashboard.chartComparison') : t('dashboard.chartTimeline')}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }} barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fill: '#475569', fontSize: 10 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  tick={{ fill: '#475569', fontSize: 10 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <Tooltip content={<CustomBarTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-                <Bar dataKey="mentorCount" name={t('dashboard.mentors')} radius={[4, 4, 0, 0]}>
-                  {chartData?.map((_entry, i) => (
-                    <Cell key={i} fill="#6366f1" fillOpacity={0.8} />
-                  ))}
-                </Bar>
-                <Bar dataKey="groupCount" name={t('dashboard.groups')} radius={[4, 4, 0, 0]}>
-                  {chartData?.map((_entry, i) => (
-                    <Cell key={i} fill="#a78bfa" fillOpacity={0.6} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-            <div className="flex items-center gap-5 mt-4 justify-center">
-              <span className="flex items-center gap-2 text-xs text-slate-500">
-                <span className="w-3 h-3 rounded-sm bg-indigo-500 inline-block" />
-                {t('dashboard.mentors')}
-              </span>
-              <span className="flex items-center gap-2 text-xs text-slate-500">
-                <span className="w-3 h-3 rounded-sm bg-violet-400 inline-block" />
-                {t('dashboard.groups')}
-              </span>
-            </div>
+            {chartMode === 'comparison' ? (
+              <ComparisonChartBody chartData={chartData} />
+            ) : (
+              <TimelineChartBody />
+            )}
           </div>
 
           {/* Cards grid (mobile/tablet) */}

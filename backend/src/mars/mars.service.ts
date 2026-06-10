@@ -240,6 +240,95 @@ export class MarsService {
     this.statsLoadedAt = 0;
   }
 
+  /**
+   * Public authenticated GET helper for other modules (e.g. tutors) that need to
+   * hit the Mars API without re-implementing the cookie refresh-token dance.
+   *
+   * `path` is relative to the Mars API host (https://api.marsit.uz). It may target
+   * either the v1 base (e.g. `/api/v1/users/user_slots`) or v2 (e.g.
+   * `/api/v2/controls/...`); pass the full `/api/vX/...` path. Auth headers are
+   * attached and one refresh+retry happens automatically on 401/403.
+   */
+  async authedGet<T>(
+    path: string,
+    params?: Record<string, string | number>,
+  ): Promise<T> {
+    return this.requestWithRetry(async (headers) => {
+      // `path` carries its own `/api/vX` prefix, so call the host root rather than
+      // the v1 baseURL — strip baseURL by using an absolute URL.
+      const response = await this.httpClient.get<T>(path, {
+        headers,
+        params,
+        baseURL: this.marsHostBase(),
+      });
+      return response.data;
+    });
+  }
+
+  /**
+   * Public authenticated POST helper. Same auth/refresh-retry contract as
+   * {@link authedGet}; `path` carries its own `/api/vX` prefix.
+   */
+  async authedPost<T>(
+    path: string,
+    body?: unknown,
+    params?: Record<string, string | number>,
+  ): Promise<T> {
+    return this.requestWithRetry(async (headers) => {
+      const response = await this.httpClient.post<T>(path, body, {
+        headers,
+        params,
+        baseURL: this.marsHostBase(),
+      });
+      return response.data;
+    });
+  }
+
+  /** Public authenticated PUT helper (see {@link authedPost}). */
+  async authedPut<T>(
+    path: string,
+    body?: unknown,
+    params?: Record<string, string | number>,
+  ): Promise<T> {
+    return this.requestWithRetry(async (headers) => {
+      const response = await this.httpClient.put<T>(path, body, {
+        headers,
+        params,
+        baseURL: this.marsHostBase(),
+      });
+      return response.data;
+    });
+  }
+
+  /** Public authenticated PATCH helper (see {@link authedPost}). */
+  async authedPatch<T>(
+    path: string,
+    body?: unknown,
+    params?: Record<string, string | number>,
+  ): Promise<T> {
+    return this.requestWithRetry(async (headers) => {
+      const response = await this.httpClient.patch<T>(path, body, {
+        headers,
+        params,
+        baseURL: this.marsHostBase(),
+      });
+      return response.data;
+    });
+  }
+
+  /** Host root (no /api/v1 suffix) derived from the configured base URL. */
+  private marsHostBase(): string {
+    const base = this.configService.get<string>(
+      'MARS_API_BASE_URL',
+      'https://api.marsit.uz/api/v1',
+    );
+    try {
+      return new URL(base).origin;
+    } catch {
+      return 'https://api.marsit.uz';
+    }
+  }
+
   // ──────────── data ────────────
 
   async getTeachers(): Promise<MarsTeacher[]> {

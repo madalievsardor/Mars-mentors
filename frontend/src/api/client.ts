@@ -9,6 +9,17 @@ import type {
   SyncResponse,
   InternsSummary,
   InternDetail,
+  TimelineResponse,
+  TutorsResponse,
+  TutorSlotsResponse,
+  UpdateTutorSlotsPayload,
+  UpdateTutorNamePayload,
+  UpdateTutorProfilePayload,
+  TutorWriteResult,
+  TutorCandidatesResponse,
+  BranchesResponse,
+  CreateTutorAccountPayload,
+  CreateTutorAccountResult,
 } from '../types';
 
 const api = axios.create({
@@ -26,6 +37,11 @@ api.interceptors.request.use((config) => {
 
 export const getDashboard = async (): Promise<FilialOverview[]> => {
   const { data } = await api.get<FilialOverview[]>('/dashboard');
+  return data;
+};
+
+export const getDashboardTimeline = async (): Promise<TimelineResponse> => {
+  const { data } = await api.get<TimelineResponse>('/dashboard/timeline');
   return data;
 };
 
@@ -76,5 +92,73 @@ export const getInternsSummary = async (): Promise<InternsSummary> => {
 
 export const getInternDetail = async (id: string): Promise<InternDetail> => {
   const { data } = await api.get<InternDetail>(`/interns/${id}`);
+  return data;
+};
+
+export const getTutors = async (): Promise<TutorsResponse> => {
+  const { data } = await api.get<TutorsResponse>('/tutors');
+  return data;
+};
+
+export const getTutorSlots = async (id: number): Promise<TutorSlotsResponse> => {
+  const { data } = await api.get<TutorSlotsResponse>(`/tutors/${id}/slots`);
+  return data;
+};
+
+export const updateTutorSlots = async (
+  id: number,
+  payload: UpdateTutorSlotsPayload,
+): Promise<TutorWriteResult> => {
+  const { data } = await api.post<TutorWriteResult>(
+    `/tutors/${id}/slots`,
+    payload,
+  );
+  return data;
+};
+
+export const updateTutorName = async (
+  id: number,
+  payload: UpdateTutorNamePayload,
+): Promise<TutorWriteResult> => {
+  const { data } = await api.patch<TutorWriteResult>(`/tutors/${id}`, payload);
+  return data;
+};
+
+/** Unified profile edit — sends only the changed fields (name and/or branch). */
+export const updateTutorProfile = async (
+  id: number,
+  payload: UpdateTutorProfilePayload,
+): Promise<TutorWriteResult> => {
+  const { data } = await api.patch<TutorWriteResult>(`/tutors/${id}`, payload);
+  return data;
+};
+
+export const removeTutor = async (id: number): Promise<TutorWriteResult> => {
+  const { data } = await api.post<TutorWriteResult>(`/tutors/${id}/remove`, {});
+  return data;
+};
+
+export const getTutorCandidates = async (): Promise<TutorCandidatesResponse> => {
+  const { data } = await api.get<TutorCandidatesResponse>('/tutors/candidates');
+  return data;
+};
+
+export const addTutor = async (userId: number): Promise<TutorWriteResult> => {
+  const { data } = await api.post<TutorWriteResult>('/tutors/add', { userId });
+  return data;
+};
+
+export const getBranches = async (): Promise<BranchesResponse> => {
+  const { data } = await api.get<BranchesResponse>('/tutors/branches');
+  return data;
+};
+
+export const createTutorAccount = async (
+  payload: CreateTutorAccountPayload,
+): Promise<CreateTutorAccountResult> => {
+  const { data } = await api.post<CreateTutorAccountResult>(
+    '/tutors/create-account',
+    payload,
+  );
   return data;
 };

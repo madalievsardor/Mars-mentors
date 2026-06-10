@@ -11,6 +11,7 @@ import { SyncModule } from './sync/sync.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { MentorsModule } from './mentors/mentors.module';
 import { InternsModule } from './interns/interns.module';
+import { TutorsModule } from './tutors/tutors.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 
@@ -30,6 +31,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     DashboardModule,
     MentorsModule,
     InternsModule,
+    TutorsModule,
     AuthModule,
   ],
   providers: [

@@ -1,5 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
-import { DashboardService, BranchOverview } from './dashboard.service';
+import {
+  DashboardService,
+  BranchOverview,
+  TimelineResponse,
+} from './dashboard.service';
 
 @Controller('api/dashboard')
 export class DashboardController {
@@ -8,5 +12,10 @@ export class DashboardController {
   @Get()
   async getBranchOverview(): Promise<BranchOverview[]> {
     return this.dashboardService.getBranchOverview();
+  }
+
+  @Get('timeline')
+  async getTimeline(): Promise<TimelineResponse> {
+    return this.dashboardService.getTimeline();
   }
 }

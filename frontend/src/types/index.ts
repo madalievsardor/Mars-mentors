@@ -13,6 +13,17 @@ export interface MentorGroup {
   studentCount: number;
 }
 
+export interface TimelinePoint {
+  date: string; // "MM-DD"
+  [branch: string]: string | number;
+}
+
+export interface TimelineResponse {
+  available: boolean;
+  branches: string[];
+  points: TimelinePoint[];
+}
+
 export type MentorGrade = 'senior' | 'middle' | 'junior';
 
 export interface Mentor {
@@ -152,4 +163,134 @@ export interface InternDetail {
   badgeCount: number;
   bonusLessonCount: number;
   mentors: InternMentorLink[];
+}
+
+// ──────────── Tutor work schedule (read-only) ────────────
+
+export type Weekday =
+  | 'monday'
+  | 'tuesday'
+  | 'wednesday'
+  | 'thursday'
+  | 'friday'
+  | 'saturday'
+  | 'sunday';
+
+export interface TutorBrief {
+  id: number;
+  name: string;
+  username: string;
+  branch: string;
+  branchId: number | null;
+  avgRating: number | null;
+  totalRatings: number;
+  interestingPercent: number | null;
+  understandablePercent: number | null;
+}
+
+export interface TutorsResponse {
+  /** False when Mars could not be reached — list is empty, client can retry. */
+  available: boolean;
+  total: number;
+  branches: string[];
+  tutors: TutorBrief[];
+}
+
+export interface ScheduleSlot {
+  id: number;
+  fromHour: string; // "09:00"
+  tillHour: string; // "09:30"
+  range: string; // "09:00-09:30"
+}
+
+export interface ScheduleRange {
+  from: string; // "09:00"
+  to: string; // "19:00"
+}
+
+export interface ScheduleDay {
+  weekday: Weekday;
+  date: string | null;
+  slots: ScheduleSlot[];
+  ranges: ScheduleRange[];
+}
+
+export interface TutorSlotsResponse {
+  available: boolean;
+  tutorId: number;
+  /** Du..Ya, always 7 entries in order. */
+  days: ScheduleDay[];
+  totalSlots: number;
+  workingDays: number;
+  totalHours: number;
+}
+
+// ──────────── Tutor edit (management) shapes ────────────
+
+export interface UpdateTutorSlotsPayload {
+  day: Weekday;
+  fromHour: string; // "HH:MM"
+  tillHour: string; // "HH:MM"
+}
+
+export interface UpdateTutorNamePayload {
+  firstName: string;
+  lastName: string;
+}
+
+/** Unified tutor edit — name and/or branch (filial rotate). All optional. */
+export interface UpdateTutorProfilePayload {
+  firstName?: string;
+  lastName?: string;
+  branchId?: number;
+}
+
+export interface TutorWriteResult {
+  ok: boolean;
+  message?: string;
+}
+
+/** A user who can be promoted to tutor (active mentor, not yet a tutor). */
+export interface TutorCandidate {
+  id: number;
+  name: string;
+  branch: string;
+}
+
+export interface TutorCandidatesResponse {
+  available: boolean;
+  total: number;
+  candidates: TutorCandidate[];
+}
+
+// ──────────── Create new tutor account (new hire) ────────────
+
+export type TutorScheduleType = 'full-time' | 'part-time';
+
+export interface Branch {
+  id: number;
+  title: string;
+}
+
+export interface BranchesResponse {
+  available: boolean;
+  branches: Branch[];
+}
+
+export interface CreateTutorAccountPayload {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  password?: string;
+  branchId: number;
+  schedule?: TutorScheduleType;
+}
+
+export interface CreateTutorAccountResult {
+  ok: boolean;
+  message?: string;
+  userId?: number;
+  name?: string;
+  branch?: string;
+  branchId?: number;
 }

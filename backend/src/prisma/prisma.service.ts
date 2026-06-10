@@ -59,6 +59,13 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return this.client.groupRosterSnapshot;
   }
 
+  $queryRaw<T = unknown>(
+    query: TemplateStringsArray,
+    ...values: unknown[]
+  ): Promise<T> {
+    return this.client.$queryRaw<T>(query, ...values);
+  }
+
   async $transaction<T>(
     fn: (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>) => Promise<T>,
   ): Promise<T> {
