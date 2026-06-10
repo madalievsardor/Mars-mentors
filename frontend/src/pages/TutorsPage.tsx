@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Users,
@@ -23,11 +24,13 @@ import {
   Phone,
   KeyRound,
   Briefcase,
+  Trash2,
 } from 'lucide-react'
 import {
   useTutors,
   useTutorSlots,
   useRemoveTutor,
+  useDeleteTutor,
   useBranches,
   useCreateTutorAccount,
   QUERY_KEYS,
@@ -79,8 +82,8 @@ function Modal({
   onClose: () => void
   children: React.ReactNode
 }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="w-full max-w-md bg-[#161b27] border border-white/[0.1] rounded-2xl shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-2.5">
@@ -98,7 +101,8 @@ function Modal({
         </div>
         <div className="p-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -500,6 +504,90 @@ function RemoveTutorModal({
             <UserMinus size={14} />
           )}
           {mutation.isPending ? t('tutors.edit.saving') : t('tutors.edit.remove')}
+        </button>
+      </div>
+    </Modal>
+  )
+}
+
+/**
+ * ⚠️ Strong-confirmation modal for PERMANENTLY deleting a user from Mars.
+ *
+ * Unlike {@link RemoveTutorModal} (which only demotes the tutor to a mentor),
+ * this hits DELETE /tutors/:id → DELETE /api/v2/users/{id} and wipes the Mars
+ * account for good. To guard against accidents the operator must type the
+ * tutor's exact name before the destructive button enables.
+ */
+function DeleteTutorModal({
+  tutor,
+  onClose,
+}: {
+  tutor: TutorBrief
+  onClose: () => void
+}) {
+  const { t } = useTranslation()
+  const mutation = useDeleteTutor()
+  const [confirmName, setConfirmName] = useState('')
+
+  // Case-insensitive, whitespace-tolerant name match.
+  const norm = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase()
+  const nameMatches = norm(confirmName) === norm(tutor.name)
+
+  const handleDelete = () => {
+    if (!nameMatches) return
+    mutation.mutate(tutor.id, { onSuccess: () => onClose() })
+  }
+
+  return (
+    <Modal title={t('tutors.edit.deleteTitle')} icon={Trash2} onClose={onClose}>
+      <div className="flex items-start gap-3 bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 mb-4">
+        <AlertTriangle size={18} className="text-rose-400 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-rose-200 text-sm font-semibold">
+            {t('tutors.edit.deleteWarning')}
+          </p>
+          <p className="text-rose-300/80 text-xs mt-1.5">
+            {t('tutors.edit.deleteIrreversible')}
+          </p>
+        </div>
+      </div>
+
+      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
+        {t('tutors.edit.deleteTypeName', { name: tutor.name })}
+      </label>
+      <input
+        value={confirmName}
+        onChange={(e) => setConfirmName(e.target.value)}
+        autoFocus
+        placeholder={tutor.name}
+        className="w-full bg-[#0f131c] border border-white/[0.1] rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-rose-500/50"
+      />
+
+      {mutation.isError && (
+        <p className="text-rose-400 text-xs mt-3">{t('tutors.edit.saveError')}</p>
+      )}
+
+      <div className="flex gap-2.5 mt-5">
+        <button
+          onClick={onClose}
+          disabled={mutation.isPending}
+          className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-slate-300 text-sm font-medium hover:bg-white/[0.07] disabled:opacity-60 transition-colors"
+        >
+          {t('tutors.edit.cancel')}
+        </button>
+        <button
+          onClick={handleDelete}
+          disabled={mutation.isPending || !nameMatches}
+          className="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+        >
+          {mutation.isPending ? (
+            <RefreshCw size={14} className="animate-spin" />
+          ) : (
+            <Trash2 size={14} />
+          )}
+          {mutation.isPending
+            ? t('tutors.edit.saving')
+            : t('tutors.edit.deleteConfirm')}
         </button>
       </div>
     </Modal>
@@ -909,7 +997,7 @@ function StatTile({
   )
 }
 
-type EditModal = 'edit' | 'remove' | null
+type EditModal = 'edit' | 'remove' | 'delete' | null
 
 function TutorDetailModal({
   tutor,
@@ -932,9 +1020,9 @@ function TutorDetailModal({
     [data],
   )
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
     >
       <div
@@ -991,6 +1079,12 @@ function TutorDetailModal({
           >
             <UserMinus size={13} /> {t('tutors.edit.removeTutor')}
           </button>
+          <button
+            onClick={() => setModal('delete')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600/20 border border-rose-600/40 text-rose-200 text-xs font-semibold hover:bg-rose-600/30 transition-colors"
+          >
+            <Trash2 size={13} /> {t('tutors.edit.deleteTutor')}
+          </button>
         </div>
 
         {modal === 'edit' && (
@@ -1002,6 +1096,9 @@ function TutorDetailModal({
         )}
         {modal === 'remove' && (
           <RemoveTutorModal tutor={tutor} onClose={() => setModal(null)} />
+        )}
+        {modal === 'delete' && (
+          <DeleteTutorModal tutor={tutor} onClose={() => setModal(null)} />
         )}
 
         {/* Stats row */}
@@ -1112,7 +1209,8 @@ function TutorDetailModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -112,5 +113,16 @@ export class TutorsController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<TutorWriteResult> {
     return this.tutorsService.removeTutor(id);
+  }
+
+  /**
+   * ⚠️ PERMANENTLY delete the user from Mars (JWT-protected). Irreversible —
+   * removes the Mars account entirely, not just the tutor role.
+   */
+  @Delete(':id')
+  async deleteTutor(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<TutorWriteResult> {
+    return this.tutorsService.deleteTutor(id);
   }
 }

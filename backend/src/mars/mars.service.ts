@@ -316,6 +316,27 @@ export class MarsService {
     });
   }
 
+  /**
+   * Public authenticated DELETE helper (see {@link authedPost}). Same
+   * auth/refresh-retry contract; `path` carries its own `/api/vX` prefix.
+   *
+   * ⚠️ DESTRUCTIVE — used for permanently removing a Mars user
+   * (DELETE /api/v2/users/{id}). The operation cannot be undone.
+   */
+  async authedDelete<T>(
+    path: string,
+    params?: Record<string, string | number>,
+  ): Promise<T> {
+    return this.requestWithRetry(async (headers) => {
+      const response = await this.httpClient.delete<T>(path, {
+        headers,
+        params,
+        baseURL: this.marsHostBase(),
+      });
+      return response.data;
+    });
+  }
+
   /** Host root (no /api/v1 suffix) derived from the configured base URL. */
   private marsHostBase(): string {
     const base = this.configService.get<string>(

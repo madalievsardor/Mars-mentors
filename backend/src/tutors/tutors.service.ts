@@ -555,6 +555,20 @@ export class TutorsService {
   }
 
   /**
+   * Permanently DELETE a user from Mars — DELETE /api/v2/users/{user_id}.
+   *
+   * ⚠️ DESTRUCTIVE and irreversible: this does NOT demote the tutor to a mentor
+   * (that's {@link removeTutor}); it removes the underlying Mars account
+   * entirely. The caller (controller + frontend) gates this behind a strong
+   * "type the tutor's name" confirmation.
+   */
+  async deleteTutor(tutorId: number): Promise<TutorWriteResult> {
+    await this.mars.authedDelete(`/api/v2/users/${tutorId}`);
+    this.invalidateCache();
+    return { ok: true, message: 'Foydalanuvchi Marsʼdan butunlay oʻchirildi' };
+  }
+
+  /**
    * Promote a user TO the tutor role (is_tutor=true): the inverse of
    * {@link removeTutor} — PATCH /api/v1/users/tutors/{user_id}?status=1.
    */

@@ -138,6 +138,15 @@ export const removeTutor = async (id: number): Promise<TutorWriteResult> => {
   return data;
 };
 
+/**
+ * ⚠️ Permanently delete the user from Mars (irreversible). Gated behind a
+ * strong type-the-name confirmation in the UI.
+ */
+export const deleteTutor = async (id: number): Promise<TutorWriteResult> => {
+  const { data } = await api.delete<TutorWriteResult>(`/tutors/${id}`);
+  return data;
+};
+
 export const getTutorCandidates = async (): Promise<TutorCandidatesResponse> => {
   const { data } = await api.get<TutorCandidatesResponse>('/tutors/candidates');
   return data;

@@ -16,6 +16,7 @@ import {
   updateTutorName,
   updateTutorProfile,
   removeTutor,
+  deleteTutor,
   getTutorCandidates,
   addTutor,
   getBranches,
@@ -139,6 +140,16 @@ export const useRemoveTutor = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => removeTutor(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.tutors });
+    },
+  });
+};
+
+export const useDeleteTutor = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => deleteTutor(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.tutors });
     },
