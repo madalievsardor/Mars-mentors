@@ -3,6 +3,7 @@ import {
   DashboardService,
   BranchOverview,
   TimelineResponse,
+  MonthlyResponse,
 } from './dashboard.service';
 
 @Controller('api/dashboard')
@@ -17,5 +18,10 @@ export class DashboardController {
   @Get('timeline')
   async getTimeline(): Promise<TimelineResponse> {
     return this.dashboardService.getTimeline();
+  }
+
+  @Get('monthly')
+  async getMonthly(): Promise<MonthlyResponse> {
+    return this.dashboardService.getMonthly();
   }
 }

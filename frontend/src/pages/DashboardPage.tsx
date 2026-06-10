@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { Users, BookOpen, GraduationCap, Building2, RefreshCw, Clock, TrendingUp } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  LineChart, Line, Legend,
+  ComposedChart, Line, Legend,
 } from 'recharts'
-import { useDashboard, useDashboardTimeline, useTriggerSync } from '../hooks/useQueries'
+import { useDashboard, useDashboardMonthly, useTriggerSync } from '../hooks/useQueries'
 import StatCard from '../components/StatCard'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
@@ -37,18 +37,6 @@ const statusConfig = {
     progress: 'bg-gradient-to-r from-red-500 to-rose-500',
   },
 }
-
-// Clean, distinct, bright-on-dark palette — one solid line per branch.
-const TIMELINE_COLORS = [
-  '#6366f1', // indigo
-  '#22d3ee', // cyan
-  '#34d399', // emerald
-  '#fbbf24', // amber
-  '#fb7185', // rose
-  '#a78bfa', // violet
-  '#38bdf8', // sky
-  '#f472b6', // pink
-]
 
 interface CustomBarTooltipProps {
   active?: boolean
@@ -167,73 +155,122 @@ function FilialTableRow({ filial }: { filial: FilialOverview }) {
   )
 }
 
-// Pure timeline line chart body — rendered inside the chart toggle card.
-// Returns null when there's no historical data so the toggle can fall back.
-function TimelineChartBody() {
-  const { t } = useTranslation()
-  const { data, isLoading } = useDashboardTimeline()
+// Distinct, fixed colour per branch line (up to 8 branches, then cycles).
+const BRANCH_COLORS = [
+  '#6366f1', // indigo
+  '#22d3ee', // cyan
+  '#34d399', // emerald
+  '#f59e0b', // amber
+  '#f43f5e', // rose
+  '#a78bfa', // violet
+  '#38bdf8', // sky
+  '#fb923c', // orange
+]
 
-  if (isLoading || !data || !data.available || data.points.length === 0) {
+interface MonthlyTooltipProps {
+  active?: boolean
+  payload?: { name?: string; value?: number; color?: string }[]
+  label?: string
+  branches?: string[]
+}
+
+function MonthlyTooltip({ active, payload, label }: MonthlyTooltipProps) {
+  if (!active || !payload || payload.length === 0) return null
+  // Sort lines high→low so the legend in the tooltip reads top-down by size.
+  const rows = [...payload]
+    .filter((p) => p.name !== undefined)
+    .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
+  return (
+    <div className="bg-[#1e2433] border border-white/10 rounded-xl px-4 py-3 shadow-2xl text-xs space-y-1.5 max-h-[280px] overflow-auto">
+      <p className="text-slate-300 font-semibold mb-2">{label}</p>
+      {rows.map((p) => (
+        <div key={p.name} className="flex justify-between gap-6 items-center">
+          <span className="flex items-center gap-2 text-slate-400">
+            <span className="w-2 h-2 rounded-full inline-block" style={{ background: p.color }} />
+            {p.name}
+          </span>
+          <span className="font-bold" style={{ color: p.color }}>{p.value}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Monthly dynamics, BY BRANCH: one smooth line per branch (active students per
+// month), with a right-side legend mapping colour→branch and a total-base
+// growth headline at the top. Pulls from GET /api/dashboard/monthly; hides
+// gracefully when Mars is unreachable.
+function MonthlyChartBody() {
+  const { t } = useTranslation()
+  const { data, isLoading } = useDashboardMonthly()
+
+  if (isLoading || !data || !data.available || data.months.length === 0) {
     return (
-      <div className="h-[340px] flex items-center justify-center text-slate-600 text-sm">
-        {t('dashboard.noData')}
+      <div className="h-[300px] flex items-center justify-center text-slate-600 text-sm">
+        {t('dashboard.monthlyNoData')}
       </div>
     )
   }
 
+  const branches = data.branches ?? []
+  const headlineGrowth = data.growthPct ?? null
+
   return (
     <>
-      <p className="text-slate-600 text-xs mb-6">{t('dashboard.timelineSubtitle')}</p>
-      <ResponsiveContainer width="100%" height={340}>
-        <LineChart data={data.points} margin={{ top: 8, right: 16, left: -12, bottom: 0 }}>
+      <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <p className="text-slate-600 text-xs">{t('dashboard.monthlySubtitle')}</p>
+        {headlineGrowth != null && (
+          <span
+            className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${
+              headlineGrowth >= 0
+                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
+                : 'bg-red-500/15 text-red-400 border border-red-500/25'
+            }`}
+          >
+            {headlineGrowth >= 0 ? '▲' : '▼'} {Math.abs(headlineGrowth)}%
+            <span className="text-slate-500 font-normal ml-1">{t('dashboard.monthlyVsPrev')}</span>
+          </span>
+        )}
+      </div>
+      <ResponsiveContainer width="100%" height={320}>
+        <ComposedChart data={data.months} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
           <XAxis
-            dataKey="date"
-            tick={{ fill: '#475569', fontSize: 10 }}
+            dataKey="label"
+            tick={{ fill: '#475569', fontSize: 11 }}
             tickLine={false}
             axisLine={false}
-            minTickGap={24}
           />
           <YAxis
             tick={{ fill: '#475569', fontSize: 10 }}
             tickLine={false}
             axisLine={false}
-            width={40}
+            width={44}
           />
-          <Tooltip
-            contentStyle={{
-              background: '#0f1420',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 12,
-              fontSize: 12,
-            }}
-            labelStyle={{ color: '#cbd5e1', fontWeight: 600, marginBottom: 4 }}
-            itemStyle={{ padding: '1px 0' }}
-            cursor={{ stroke: 'rgba(255,255,255,0.12)', strokeWidth: 1 }}
-          />
+          <Tooltip content={<MonthlyTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.08)' }} />
           <Legend
+            layout="vertical"
             verticalAlign="middle"
             align="right"
-            layout="vertical"
-            iconType="plainline"
-            wrapperStyle={{ fontSize: 12, paddingLeft: 16, color: '#94a3b8' }}
+            iconType="circle"
+            wrapperStyle={{ fontSize: 11, color: '#94a3b8', paddingLeft: 12, lineHeight: '20px' }}
           />
-          {data.branches.map((branch, i) => (
+          {branches.map((branch, i) => (
             <Line
               key={branch}
               type="monotone"
               dataKey={branch}
               name={branch}
-              stroke={TIMELINE_COLORS[i % TIMELINE_COLORS.length]}
+              stroke={BRANCH_COLORS[i % BRANCH_COLORS.length]}
               strokeWidth={2}
-              dot={false}
+              dot={{ r: 2, strokeWidth: 0, fill: BRANCH_COLORS[i % BRANCH_COLORS.length] }}
               activeDot={{ r: 4 }}
-              isAnimationActive
-              animationDuration={1200}
               connectNulls
+              isAnimationActive
+              animationDuration={800}
             />
           ))}
-        </LineChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </>
   )
@@ -291,7 +328,7 @@ export default function DashboardPage() {
   const syncMutation = useTriggerSync()
   const [lastSync, setLastSync] = useState<string | null>(null)
   const [syncError, setSyncError] = useState(false)
-  const [chartMode, setChartMode] = useState<'comparison' | 'timeline'>('comparison')
+  const [chartMode, setChartMode] = useState<'comparison' | 'monthly'>('comparison')
 
   const localeCode = useMemo(() => {
     if (i18n.language === 'uz') return 'uz-UZ'
@@ -390,12 +427,12 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2">
                 <TrendingUp size={16} className="text-indigo-400" />
                 <h2 className="font-semibold text-slate-200 text-sm">
-                  {chartMode === 'comparison' ? t('dashboard.chartTitle') : t('dashboard.timelineTitle')}
+                  {chartMode === 'comparison' ? t('dashboard.chartTitle') : t('dashboard.monthlyTitle')}
                 </h2>
               </div>
               {/* Toggle — segmented control (only one chart shows at a time) */}
               <div className="flex items-center gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                {(['comparison', 'timeline'] as const).map((mode) => {
+                {(['comparison', 'monthly'] as const).map((mode) => {
                   const active = chartMode === mode
                   return (
                     <button
@@ -407,7 +444,7 @@ export default function DashboardPage() {
                           : 'text-slate-400 hover:text-slate-200'
                       }`}
                     >
-                      {mode === 'comparison' ? t('dashboard.chartComparison') : t('dashboard.chartTimeline')}
+                      {mode === 'comparison' ? t('dashboard.chartComparison') : t('dashboard.chartMonthly')}
                     </button>
                   )
                 })}
@@ -416,7 +453,7 @@ export default function DashboardPage() {
             {chartMode === 'comparison' ? (
               <ComparisonChartBody chartData={chartData} />
             ) : (
-              <TimelineChartBody />
+              <MonthlyChartBody />
             )}
           </div>
 

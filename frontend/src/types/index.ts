@@ -24,6 +24,20 @@ export interface TimelineResponse {
   points: TimelinePoint[];
 }
 
+export interface MonthlyPoint {
+  month: string; // "2026-01"
+  label: string; // "Yan"
+  total: number; // sum across all branches
+  [branch: string]: string | number; // per-branch active-student count
+}
+
+export interface MonthlyResponse {
+  available: boolean;
+  branches: string[];
+  growthPct: number | null;
+  months: MonthlyPoint[];
+}
+
 export type MentorGrade = 'senior' | 'middle' | 'junior';
 
 export interface Mentor {

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getDashboard,
   getDashboardTimeline,
+  getDashboardMonthly,
   getMentors,
   getMentorHistory,
   getMentorLeftStudents,
@@ -39,6 +40,7 @@ export const QUERY_KEYS = {
   interns: ['interns'] as const,
   internDetail: (id: string) => ['interns', id, 'detail'] as const,
   dashboardTimeline: ['dashboard', 'timeline'] as const,
+  dashboardMonthly: ['dashboard', 'monthly'] as const,
   tutors: ['tutors'] as const,
   tutorSlots: (id: number) => ['tutors', id, 'slots'] as const,
   tutorCandidates: ['tutors', 'candidates'] as const,
@@ -209,6 +211,15 @@ export const useDashboardTimeline = () =>
   useQuery({
     queryKey: QUERY_KEYS.dashboardTimeline,
     queryFn: getDashboardTimeline,
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+export const useDashboardMonthly = () =>
+  useQuery({
+    queryKey: QUERY_KEYS.dashboardMonthly,
+    queryFn: getDashboardMonthly,
     staleTime: 5 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000,
     refetchOnWindowFocus: false,

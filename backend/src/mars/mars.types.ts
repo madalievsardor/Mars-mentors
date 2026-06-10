@@ -50,6 +50,11 @@ export interface MarsGroup {
   students_number: number;
   lesson_start_time: string;
   status: string;
+  /** ISO timestamps marking the group's lifecycle window (used for the
+   *  monthly-dynamics chart — a group is "active" in a month if the month
+   *  overlaps [date_started, date_finished]). */
+  date_started?: string | null;
+  date_finished?: string | null;
 }
 
 export interface MarsGroupsResponse {

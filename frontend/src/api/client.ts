@@ -10,6 +10,7 @@ import type {
   InternsSummary,
   InternDetail,
   TimelineResponse,
+  MonthlyResponse,
   TutorsResponse,
   TutorSlotsResponse,
   UpdateTutorSlotsPayload,
@@ -42,6 +43,11 @@ export const getDashboard = async (): Promise<FilialOverview[]> => {
 
 export const getDashboardTimeline = async (): Promise<TimelineResponse> => {
   const { data } = await api.get<TimelineResponse>('/dashboard/timeline');
+  return data;
+};
+
+export const getDashboardMonthly = async (): Promise<MonthlyResponse> => {
+  const { data } = await api.get<MonthlyResponse>('/dashboard/monthly');
   return data;
 };
 
