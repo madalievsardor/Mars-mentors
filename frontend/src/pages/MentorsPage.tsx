@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { Search, SlidersHorizontal, TrendingDown, TrendingUp, Users, BookOpen, Minus, GraduationCap } from 'lucide-react'
+import { Search, SlidersHorizontal, TrendingDown, TrendingUp, Users, Minus, GraduationCap } from 'lucide-react'
 import { useMentors, useInterns } from '../hooks/useQueries'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
@@ -73,7 +73,7 @@ function sortMentors(mentors: Mentor[], sort: SortOption): Mentor[] {
   })
 }
 
-function MentorCard({
+function MentorRow({
   mentor,
   internCount,
   onClick,
@@ -98,97 +98,92 @@ function MentorCard({
       : t('mentors.tierDecreased')
 
   return (
-    <div
+    <tr
       role="button"
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
-      className={`h-full flex flex-col rounded-2xl p-5 cursor-pointer transition-all duration-200 animate-slide-up select-none outline-none [-webkit-tap-highlight-color:transparent] ${cfg.cardClass}`}
+      className="border-b border-white/[0.05] cursor-pointer transition-colors hover:bg-white/[0.03] focus:bg-white/[0.04] outline-none select-none [-webkit-tap-highlight-color:transparent]"
     >
-      {/* Top row */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-start gap-3 min-w-0">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold ${cfg.avatarBg} ${cfg.avatarText}`}>
+      {/* Mentor */}
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold ${cfg.avatarBg} ${cfg.avatarText}`}>
             {mentor.name.charAt(0)}
           </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-semibold text-slate-200 text-sm leading-tight">{mentor.name}</h3>
-              <span className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>
-                <Icon size={9} />
-                {tierLabel}
-              </span>
-            </div>
-            <p className="text-slate-600 text-xs mt-0.5">{mentor.branch}</p>
-          </div>
+          <span className="font-semibold text-slate-200 text-sm leading-tight whitespace-nowrap">{mentor.name}</span>
         </div>
-        <span className={`text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0 ${gradeBadgeMap[mentor.grade]}`}>
+      </td>
+
+      {/* Branch */}
+      <td className="px-4 py-3 text-sm text-slate-400 whitespace-nowrap">{mentor.branch}</td>
+
+      {/* Grade */}
+      <td className="px-4 py-3">
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${gradeBadgeMap[mentor.grade]}`}>
           {gradeLabelMap[mentor.grade]}
         </span>
-      </div>
+      </td>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-1.5 mb-4">
-        <div className="bg-white/[0.03] rounded-xl px-1.5 py-2.5 text-center min-w-0">
-          <BookOpen size={11} className="text-violet-400 mx-auto mb-1" />
-          <p className="text-violet-400 font-bold text-lg leading-none">{mentor.groupCount}</p>
-          <p className="text-slate-500 text-[11px] leading-tight mt-1">{t('mentors.groups')}</p>
-        </div>
-        <div className="bg-white/[0.03] rounded-xl px-1.5 py-2.5 text-center min-w-0">
-          <Users size={11} className={`${cfg.countColor} mx-auto mb-1`} />
-          <p className={`font-bold text-lg leading-none ${cfg.countColor}`}>{mentor.studentCount}</p>
-          <p className="text-slate-500 text-[11px] leading-tight mt-1">{t('mentors.students')}</p>
-        </div>
-        <div
-          role={internCount !== null ? 'button' : undefined}
-          tabIndex={internCount !== null ? 0 : undefined}
-          onClick={(e) => {
-            if (internCount === null) return
-            e.stopPropagation()
-            onOpenInterns()
-          }}
-          onKeyDown={(e) => {
-            if (internCount === null) return
-            if (e.key === 'Enter') {
+      {/* Status */}
+      <td className="px-4 py-3">
+        <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${cfg.badgeClass}`}>
+          <Icon size={10} />
+          {tierLabel}
+        </span>
+      </td>
+
+      {/* Groups */}
+      <td className="px-4 py-3 text-center">
+        <span className="text-violet-400 font-bold text-sm">{mentor.groupCount}</span>
+      </td>
+
+      {/* Students */}
+      <td className="px-4 py-3 text-center">
+        <span className={`font-bold text-sm ${cfg.countColor}`}>{mentor.studentCount}</span>
+      </td>
+
+      {/* Interns */}
+      <td className="px-4 py-3 text-center">
+        {internCount !== null ? (
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
               e.stopPropagation()
               onOpenInterns()
-            }
-          }}
-          className={`bg-white/[0.03] rounded-xl px-1.5 py-2.5 text-center min-w-0 ${
-            internCount !== null ? 'cursor-pointer hover:bg-white/[0.06] transition-colors' : ''
-          }`}
-        >
-          <GraduationCap size={11} className="text-sky-400 mx-auto mb-1" />
-          <p className="text-sky-400 font-bold text-lg leading-none">{internCount !== null ? internCount : '—'}</p>
-          <p className="text-slate-500 text-[11px] leading-tight mt-1">{t('mentors.interns')}</p>
-        </div>
-      </div>
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.stopPropagation()
+                onOpenInterns()
+              }
+            }}
+            className="inline-flex items-center gap-1 text-sky-400 font-bold text-sm cursor-pointer hover:text-sky-300 transition-colors"
+          >
+            <GraduationCap size={12} />
+            {internCount}
+          </span>
+        ) : (
+          <span className="text-slate-600 text-sm">—</span>
+        )}
+      </td>
 
-      {/* Progress */}
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-slate-600 text-xs">{t('mentors.workload', { limit: STUDENT_GOOD })}</span>
-          <span className={`text-xs font-semibold ${cfg.countColor}`}>
+      {/* Workload */}
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2 min-w-[120px]">
+          <div className="flex-1 h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${cfg.progressClass}`}
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          <span className={`text-xs font-semibold whitespace-nowrap ${cfg.countColor}`}>
             {mentor.studentCount}/{STUDENT_GOOD}
           </span>
         </div>
-        <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${cfg.progressClass}`}
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-      </div>
-
-      {/* "Decreased" row — clear, standalone, red. Stays visible alongside the
-          tier badge above. */}
-      {mentor.trend === 'down' && mentor.prevStudentCount !== null && (
-        <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-red-500/10 border border-red-500/20 px-2.5 py-1.5 text-red-400 text-xs font-semibold">
-          <TrendingDown size={12} className="flex-shrink-0" />
-          {t('mentors.decreased', { count: mentor.prevStudentCount - mentor.studentCount })}
-        </div>
-      )}
-    </div>
+      </td>
+    </tr>
   )
 }
 
@@ -355,19 +350,37 @@ export default function MentorsPage() {
       )}
 
       {!isLoading && !isError && filtered.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map((mentor) => {
-            const internCount = internCountByName.get(normalizeName(mentor.name)) ?? null
-            return (
-              <MentorCard
-                key={mentor.id}
-                mentor={mentor}
-                internCount={internCount}
-                onClick={() => setSelectedMentor(mentor)}
-                onOpenInterns={() => navigate('/interns', { state: { search: mentor.name } })}
-              />
-            )
-          })}
+        <div className="bg-[#161b27] border border-white/[0.06] rounded-2xl overflow-hidden animate-slide-up">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-[#0d1117] sticky top-0 z-10 border-b border-white/[0.08]">
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">{t('mentors.colMentor')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">{t('mentors.colBranch')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">{t('mentors.colGrade')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">{t('mentors.colStatus')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide text-center whitespace-nowrap">{t('mentors.colGroups')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide text-center whitespace-nowrap">{t('mentors.colStudents')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide text-center whitespace-nowrap">{t('mentors.colInterns')}</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">{t('mentors.colWorkload')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((mentor) => {
+                  const internCount = internCountByName.get(normalizeName(mentor.name)) ?? null
+                  return (
+                    <MentorRow
+                      key={mentor.id}
+                      mentor={mentor}
+                      internCount={internCount}
+                      onClick={() => setSelectedMentor(mentor)}
+                      onOpenInterns={() => navigate('/interns', { state: { search: mentor.name } })}
+                    />
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

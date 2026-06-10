@@ -56,7 +56,17 @@
     "legendAverage": "Average (8–12)",
     "legendHigh": "High (>12)",
     "chartTimeline": "Timeline",
-    "chartComparison": "Comparison"
+    "chartComparison": "Comparison",
+    "chartMonthly": "Monthly",
+    "monthlyTitle": "Monthly dynamics",
+    "monthlySubtitle": "Active students per month and growth across this year",
+    "monthlyStudents": "Students",
+    "monthlyRevenue": "Total revenue",
+    "monthlyGrowth": "Growth / decline",
+    "monthlyNoData": "No monthly data available yet",
+    "monthlyRevenueUnavailable": "Revenue data is not available for this role",
+    "monthlyVsPrev": "vs previous month",
+    "monthlyMonth": "Month"
   },
   "mentors": {
     "title": "Mentors",
@@ -91,7 +101,15 @@
     "cycleProgress": "{{elapsed}}/{{total}} mo",
     "now": "Now",
     "needToStay": "To not drop",
-    "needToUp": "To raise"
+    "needToUp": "To raise",
+    "colMentor": "Mentor",
+    "colBranch": "Branch",
+    "colGrade": "Grade",
+    "colStatus": "Status",
+    "colGroups": "Groups",
+    "colStudents": "Students",
+    "colInterns": "Interns",
+    "colWorkload": "Workload"
   },
   "notifications": {
     "title": "Notifications",

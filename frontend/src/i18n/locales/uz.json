@@ -56,7 +56,17 @@
     "legendAverage": "O'rtacha (8–12)",
     "legendHigh": "Yuqori (>12)",
     "chartTimeline": "Vaqt bo'yicha",
-    "chartComparison": "Taqqoslash"
+    "chartComparison": "Taqqoslash",
+    "chartMonthly": "Oylik dinamika",
+    "monthlyTitle": "Oylik dinamika",
+    "monthlySubtitle": "Shu yil bo'yicha har oydagi faol o'quvchilar soni va o'sishi",
+    "monthlyStudents": "O'quvchilar",
+    "monthlyRevenue": "Umumiy tushum",
+    "monthlyGrowth": "O'sish / kamayish",
+    "monthlyNoData": "Oylik ma'lumot hozircha mavjud emas",
+    "monthlyRevenueUnavailable": "Tushum ma'lumoti bu rol uchun mavjud emas",
+    "monthlyVsPrev": "oldingi oyga nisbatan",
+    "monthlyMonth": "Oy"
   },
   "mentors": {
     "title": "Mentorlar",
@@ -91,7 +101,15 @@
     "cycleProgress": "{{elapsed}}/{{total}} oy",
     "now": "Hozir",
     "needToStay": "Tushmaslik uchun",
-    "needToUp": "Oshirish uchun"
+    "needToUp": "Oshirish uchun",
+    "colMentor": "Mentor",
+    "colBranch": "Filial",
+    "colGrade": "Daraja",
+    "colStatus": "Holat",
+    "colGroups": "Guruhlar",
+    "colStudents": "O'quvchilar",
+    "colInterns": "Internlar",
+    "colWorkload": "Yuklama"
   },
   "notifications": {
     "title": "Bildirishnomalar",

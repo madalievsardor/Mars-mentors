@@ -56,7 +56,17 @@
     "legendAverage": "Средний (8–12)",
     "legendHigh": "Высокий (>12)",
     "chartTimeline": "По времени",
-    "chartComparison": "Сравнение"
+    "chartComparison": "Сравнение",
+    "chartMonthly": "Месячная динамика",
+    "monthlyTitle": "Месячная динамика",
+    "monthlySubtitle": "Количество активных студентов и рост по месяцам за этот год",
+    "monthlyStudents": "Студенты",
+    "monthlyRevenue": "Общий доход",
+    "monthlyGrowth": "Рост / снижение",
+    "monthlyNoData": "Месячные данные пока недоступны",
+    "monthlyRevenueUnavailable": "Данные о доходе недоступны для этой роли",
+    "monthlyVsPrev": "к предыдущему месяцу",
+    "monthlyMonth": "Месяц"
   },
   "mentors": {
     "title": "Менторы",
@@ -91,7 +101,15 @@
     "cycleProgress": "{{elapsed}}/{{total}} мес",
     "now": "Сейчас",
     "needToStay": "Чтобы не понизился",
-    "needToUp": "Чтобы повысить"
+    "needToUp": "Чтобы повысить",
+    "colMentor": "Ментор",
+    "colBranch": "Филиал",
+    "colGrade": "Грейд",
+    "colStatus": "Статус",
+    "colGroups": "Группы",
+    "colStudents": "Ученики",
+    "colInterns": "Стажёры",
+    "colWorkload": "Нагрузка"
   },
   "notifications": {
     "title": "Уведомления",
