@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Users,
@@ -27,7 +27,6 @@ import {
 import {
   useTutors,
   useTutorSlots,
-  useUpdateTutorSlots,
   useRemoveTutor,
   useBranches,
   useCreateTutorAccount,
@@ -103,163 +102,6 @@ function Modal({
   )
 }
 
-function ScheduleEditModal({
-  tutor,
-  initialDays,
-  onClose,
-}: {
-  tutor: TutorBrief
-  initialDays: { weekday: Weekday; ranges: ScheduleRange[] }[]
-  onClose: () => void
-}) {
-  const { t } = useTranslation()
-  const mutation = useUpdateTutorSlots()
-  const [day, setDay] = useState<Weekday>('monday')
-
-  // Pre-fill from/till with the day's current first range, if any.
-  const currentForDay = initialDays.find((d) => d.weekday === day)
-  const firstRange = currentForDay?.ranges[0]
-  const [fromHour, setFromHour] = useState(firstRange?.from ?? '09:00')
-  const [tillHour, setTillHour] = useState(firstRange?.to ?? '19:00')
-  const [confirm, setConfirm] = useState(false)
-
-  // When the chosen day changes, sync the pickers to that day's existing range.
-  useEffect(() => {
-    const d = initialDays.find((x) => x.weekday === day)
-    const r = d?.ranges[0]
-    setFromHour(r?.from ?? '09:00')
-    setTillHour(r?.to ?? '19:00')
-    setConfirm(false)
-  }, [day, initialDays])
-
-  const isDayOff = fromHour === tillHour
-  const handleSave = () => {
-    mutation.mutate(
-      { id: tutor.id, payload: { day, fromHour, tillHour } },
-      { onSuccess: () => onClose() },
-    )
-  }
-
-  return (
-    <Modal
-      title={t('tutors.edit.scheduleTitle')}
-      icon={Clock}
-      onClose={onClose}
-    >
-      <p className="text-slate-500 text-xs mb-4">{t('tutors.edit.scheduleHint')}</p>
-
-      <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-        {t('tutors.edit.day')}
-      </label>
-      <select
-        value={day}
-        onChange={(e) => setDay(e.target.value as Weekday)}
-        className="w-full bg-[#0f131c] border border-white/[0.1] rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500/50 cursor-pointer mb-4"
-      >
-        {WEEKDAYS.map((wd) => (
-          <option key={wd} value={wd}>
-            {t(`tutors.days.${wd}`)}
-          </option>
-        ))}
-      </select>
-
-      <div className="grid grid-cols-2 gap-3 mb-2">
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-            {t('tutors.edit.from')}
-          </label>
-          <select
-            value={fromHour}
-            onChange={(e) => setFromHour(e.target.value)}
-            className="w-full bg-[#0f131c] border border-white/[0.1] rounded-xl px-3 py-2.5 text-sm text-slate-200 tabular-nums focus:outline-none focus:border-indigo-500/50 cursor-pointer"
-          >
-            {HOUR_OPTIONS.map((h) => (
-              <option key={h} value={h}>
-                {h}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1.5">
-            {t('tutors.edit.to')}
-          </label>
-          <select
-            value={tillHour}
-            onChange={(e) => setTillHour(e.target.value)}
-            className="w-full bg-[#0f131c] border border-white/[0.1] rounded-xl px-3 py-2.5 text-sm text-slate-200 tabular-nums focus:outline-none focus:border-indigo-500/50 cursor-pointer"
-          >
-            {HOUR_OPTIONS.map((h) => (
-              <option key={h} value={h}>
-                {h}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      {isDayOff && (
-        <p className="text-amber-300/80 text-xs flex items-center gap-1.5 mb-2">
-          <Coffee size={12} /> {t('tutors.edit.dayOffOption')}
-        </p>
-      )}
-
-      {mutation.isError && (
-        <p className="text-rose-400 text-xs mt-2">{t('tutors.edit.saveError')}</p>
-      )}
-
-      {!confirm ? (
-        <div className="flex gap-2.5 mt-5">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-slate-300 text-sm font-medium hover:bg-white/[0.07] transition-colors"
-          >
-            {t('tutors.edit.cancel')}
-          </button>
-          <button
-            onClick={() => setConfirm(true)}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-colors"
-          >
-            {t('tutors.edit.save')}
-          </button>
-        </div>
-      ) : (
-        <div className="mt-5 bg-amber-500/10 border border-amber-500/25 rounded-xl p-4">
-          <p className="text-amber-200 text-sm font-medium flex items-center gap-2 mb-3">
-            <AlertTriangle size={15} /> {t('tutors.edit.confirmSave')}
-          </p>
-          <p className="text-slate-300 text-sm mb-3 tabular-nums">
-            <span className="font-bold text-indigo-300">
-              {t(`tutors.days.${day}`)}
-            </span>{' '}
-            · {isDayOff ? t('tutors.edit.dayOffOption') : `${fromHour}–${tillHour}`}
-          </p>
-          <div className="flex gap-2.5">
-            <button
-              onClick={() => setConfirm(false)}
-              disabled={mutation.isPending}
-              className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-slate-300 text-sm font-medium hover:bg-white/[0.07] disabled:opacity-60 transition-colors"
-            >
-              {t('tutors.edit.cancel')}
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={mutation.isPending}
-              className="flex-1 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
-            >
-              {mutation.isPending ? (
-                <RefreshCw size={14} className="animate-spin" />
-              ) : (
-                <Check size={14} />
-              )}
-              {mutation.isPending ? t('tutors.edit.saving') : t('tutors.edit.confirm')}
-            </button>
-          </div>
-        </div>
-      )}
-    </Modal>
-  )
-}
-
 /**
  * Unified tutor edit modal — name, branch (filial rotate) and the full weekly
  * work schedule in one place.
@@ -310,6 +152,28 @@ function TutorEditModal({
 
   const setDay = (wd: Weekday, patch: Partial<DayState>) =>
     setSchedule((s) => ({ ...s, [wd]: { ...s[wd], ...patch } }))
+
+  // Quick-fill: Mon–Fri 09:00–19:00, Sat & Sun stay off (from === till).
+  const fillWeekdays = () =>
+    setSchedule((s) => {
+      const next = { ...s }
+      for (const wd of WEEKDAYS) {
+        if (wd === 'saturday' || wd === 'sunday') {
+          next[wd] = { from: '09:00', till: '09:00' }
+        } else {
+          next[wd] = { from: '09:00', till: '19:00' }
+        }
+      }
+      return next
+    })
+
+  // Quick-clear: every day off.
+  const clearSchedule = () =>
+    setSchedule((s) => {
+      const next = { ...s }
+      for (const wd of WEEKDAYS) next[wd] = { from: '09:00', till: '09:00' }
+      return next
+    })
 
   // What changed, so we only send the necessary writes.
   const nameChanged =
@@ -435,6 +299,22 @@ function TutorEditModal({
           <p className="text-slate-600 text-[11px] mb-2.5">
             {t('tutors.edit.scheduleDayHint')}
           </p>
+          <div className="flex flex-wrap gap-2 mb-2.5">
+            <button
+              type="button"
+              onClick={fillWeekdays}
+              className="px-2.5 py-1.5 rounded-lg bg-indigo-600/15 border border-indigo-500/30 text-indigo-200 text-[11px] font-semibold hover:bg-indigo-600/25 transition-colors tabular-nums"
+            >
+              {t('tutors.edit.fillWeekdays')}
+            </button>
+            <button
+              type="button"
+              onClick={clearSchedule}
+              className="px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-slate-300 text-[11px] font-semibold hover:bg-white/[0.07] transition-colors"
+            >
+              {t('tutors.edit.clearSchedule')}
+            </button>
+          </div>
           <div className="space-y-1.5">
             {WEEKDAYS.map((wd) => {
               const d = schedule[wd]
@@ -632,8 +512,9 @@ function RemoveTutorModal({
  * Three steps in one modal:
  *  1. "form"     — Ism / Familiya / Telefon / Parol / Filial / Bandlik.
  *  2. "confirm"  — review the entered data before creating the real account.
- *  3. on success — hands off the new tutor's id to {@link ScheduleEditModal}
- *     (rendered by the parent) so the work schedule can be set right away.
+ *  3. on success — hands off the new tutor's id to {@link TutorEditModal}
+ *     (rendered by the parent) so the full weekly schedule can be set right
+ *     away via the 7-day grid + "Mon–Fri 09:00–19:00" quick-fill.
  */
 function CreateTutorModal({
   onClose,
@@ -1328,7 +1209,10 @@ export default function TutorsPage() {
       )}
 
       {newTutor && (
-        <ScheduleEditModal
+        // Reuse the unified editor: it gives the new tutor a full 7-day grid
+        // plus the "Mon–Fri 09:00–19:00" quick-fill button, so the weekly
+        // schedule can be set in one click instead of day-by-day.
+        <TutorEditModal
           tutor={newTutor}
           initialDays={emptyDays}
           onClose={() => {

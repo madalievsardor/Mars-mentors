@@ -285,7 +285,9 @@
       "scheduleSection": "Ish grafigi",
       "branch": "Filial",
       "branchKeep": "Oʻzgartirilmasin",
-      "scheduleDayHint": "Har kun uchun ish vaqtini tanlang. Bir xil boshlanish va tugash — dam kuni."
+      "scheduleDayHint": "Har kun uchun ish vaqtini tanlang. Bir xil boshlanish va tugash — dam kuni.",
+      "fillWeekdays": "Dush–Juma 09:00–19:00",
+      "clearSchedule": "Tozalash"
     },
     "create": {
       "addTutor": "Yangi tutor qoʻshish",

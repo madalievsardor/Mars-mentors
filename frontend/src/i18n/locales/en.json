@@ -285,7 +285,9 @@
       "scheduleSection": "Work schedule",
       "branch": "Branch",
       "branchKeep": "Keep unchanged",
-      "scheduleDayHint": "Pick working hours for each day. Equal start and end means day off."
+      "scheduleDayHint": "Pick working hours for each day. Equal start and end means day off.",
+      "fillWeekdays": "Mon–Fri 09:00–19:00",
+      "clearSchedule": "Clear"
     },
     "create": {
       "addTutor": "Add new tutor",
