@@ -250,7 +250,7 @@
       "manage": "Manage",
       "editSchedule": "Edit schedule",
       "editName": "Edit name",
-      "removeTutor": "Remove from tutors → mentor",
+      "removeTutor": "Move to mentor",
       "scheduleTitle": "Edit working schedule",
       "scheduleHint": "Pick a day and a start–end time. The system maps it to 30-min slots.",
       "day": "Day",
