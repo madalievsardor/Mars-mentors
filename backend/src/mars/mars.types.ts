@@ -29,6 +29,7 @@ export interface MarsCategory {
 }
 
 export interface SimpleMentorGroup {
+  id: number;
   name: string;
   category: string;
   time: string;

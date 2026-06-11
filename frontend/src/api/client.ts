@@ -21,6 +21,10 @@ import type {
   BranchesResponse,
   CreateTutorAccountPayload,
   CreateTutorAccountResult,
+  AttendanceOverview,
+  GroupAttendance,
+  AttendanceMarkPayload,
+  AttendanceMarkResult,
 } from '../types';
 
 const api = axios.create({
@@ -173,6 +177,34 @@ export const createTutorAccount = async (
 ): Promise<CreateTutorAccountResult> => {
   const { data } = await api.post<CreateTutorAccountResult>(
     '/tutors/create-account',
+    payload,
+  );
+  return data;
+};
+
+export const getAttendanceOverview = async (
+  refresh = false,
+): Promise<AttendanceOverview> => {
+  const { data } = await api.get<AttendanceOverview>('/attendance/overview', {
+    params: refresh ? { refresh: 1 } : undefined,
+  });
+  return data;
+};
+
+export const getGroupAttendance = async (
+  groupId: number,
+): Promise<GroupAttendance> => {
+  const { data } = await api.get<GroupAttendance>(
+    `/attendance/group/${groupId}`,
+  );
+  return data;
+};
+
+export const markAttendance = async (
+  payload: AttendanceMarkPayload,
+): Promise<AttendanceMarkResult> => {
+  const { data } = await api.post<AttendanceMarkResult>(
+    '/attendance/mark',
     payload,
   );
   return data;

@@ -408,16 +408,11 @@ export class MarsService {
     const fmt = (d: Date): string => d.toISOString().slice(0, 10);
 
     try {
-      const data = await this.requestWithRetry(async (headers) => {
-        const response = await this.httpClient.get<unknown>(
-          `/attendance/${groupId}`,
-          {
-            headers,
-            params: { from_date: fmt(from), till_date: fmt(till) },
-          },
-        );
-        return response.data;
-      });
+      const data = await this.getGroupAttendanceRaw(
+        groupId,
+        fmt(from),
+        fmt(till),
+      );
       return this.parseRoster(data);
     } catch (err) {
       this.logger.warn(
@@ -425,6 +420,30 @@ export class MarsService {
       );
       return [];
     }
+  }
+
+  /**
+   * Raw attendance payload for one group over [fromDate, tillDate] (YYYY-MM-DD).
+   * Hits the same `GET /attendance/{group_id}` endpoint the Mars attendance UI
+   * uses; returns the untouched body ({ days, students }) for the caller to
+   * normalize. Throws on failure (unlike {@link getGroupRoster}) so the
+   * attendance module can decide how to handle a single bad group.
+   */
+  async getGroupAttendanceRaw(
+    groupId: number,
+    fromDate: string,
+    tillDate: string,
+  ): Promise<unknown> {
+    return this.requestWithRetry(async (headers) => {
+      const response = await this.httpClient.get<unknown>(
+        `/attendance/${groupId}`,
+        {
+          headers,
+          params: { from_date: fromDate, till_date: tillDate },
+        },
+      );
+      return response.data;
+    });
   }
 
   /**
@@ -507,6 +526,7 @@ export class MarsService {
       stat.groupCount += 1;
       stat.studentCount += group.students_number ?? 0;
       const simpleGroup: SimpleMentorGroup = {
+        id: group.id,
         name: group.name,
         category: group.category?.name ?? '',
         time: group.lesson_start_time ?? '',

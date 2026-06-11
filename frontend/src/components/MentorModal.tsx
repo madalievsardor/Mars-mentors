@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { X, Clock, BookOpen, Users, TrendingUp, UserMinus } from 'lucide-react'
+import { X, Clock, BookOpen, Users, TrendingUp, UserMinus, ChevronRight } from 'lucide-react'
 import {
   LineChart,
   Line,
@@ -53,6 +54,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 
 export default function MentorModal({ mentor, onClose }: MentorModalProps) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { data: history, isLoading } = useMentorHistory(mentor.id)
   const { data: leftData, isLoading: leftLoading } = useMentorLeftStudents(mentor.id)
   const leftStudents = leftData?.leftStudents ?? []
@@ -128,9 +130,15 @@ export default function MentorModal({ mentor, onClose }: MentorModalProps) {
           {mentor.groups && mentor.groups.length > 0 ? (
             <div className="space-y-2">
               {mentor.groups.map((group) => (
-                <div
-                  key={group.name}
-                  className="flex items-center justify-between bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 hover:border-indigo-500/20 transition-colors"
+                <button
+                  key={group.id ?? group.name}
+                  onClick={() => {
+                    if (!group.id) return
+                    onClose()
+                    navigate(`/attendance/group/${group.id}`)
+                  }}
+                  title={t('modal.openAttendance')}
+                  className="w-full flex items-center justify-between bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-left hover:bg-violet-500/[0.08] hover:border-violet-500/25 transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center flex-shrink-0">
@@ -165,8 +173,9 @@ export default function MentorModal({ mentor, onClose }: MentorModalProps) {
                         </>
                       )
                     })()}
+                    <ChevronRight size={15} className="text-slate-600" />
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           ) : (

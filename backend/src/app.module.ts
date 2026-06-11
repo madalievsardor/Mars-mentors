@@ -12,6 +12,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { MentorsModule } from './mentors/mentors.module';
 import { InternsModule } from './interns/interns.module';
 import { TutorsModule } from './tutors/tutors.module';
+import { AttendanceModule } from './attendance/attendance.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 
@@ -32,6 +33,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     MentorsModule,
     InternsModule,
     TutorsModule,
+    AttendanceModule,
     AuthModule,
   ],
   providers: [

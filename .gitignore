@@ -6,3 +6,5 @@ dist
 *.tsbuildinfo
 /backend/generated/prisma
 backend/mars-cookies.json
+
+.claude/

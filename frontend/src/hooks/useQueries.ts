@@ -22,6 +22,9 @@ import {
   addTutor,
   getBranches,
   createTutorAccount,
+  getAttendanceOverview,
+  getGroupAttendance,
+  markAttendance,
 } from '../api/client';
 import type {
   NotificationSetting,
@@ -45,6 +48,8 @@ export const QUERY_KEYS = {
   tutorSlots: (id: number) => ['tutors', id, 'slots'] as const,
   tutorCandidates: ['tutors', 'candidates'] as const,
   branches: ['tutors', 'branches'] as const,
+  attendanceOverview: ['attendance', 'overview'] as const,
+  groupAttendance: (id: number) => ['attendance', 'group', id] as const,
 };
 
 export const useInterns = () =>
@@ -196,6 +201,49 @@ export const useCreateTutorAccount = () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.tutors });
     },
   });
+};
+
+export const useAttendanceOverview = () =>
+  useQuery({
+    queryKey: QUERY_KEYS.attendanceOverview,
+    queryFn: () => getAttendanceOverview(false),
+    // Backend scans every active group, so it's heavy and cached server-side
+    // (~30 min). Keep the client copy fresh for 10 min; no aggressive polling.
+    staleTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+
+export const useRefreshAttendanceOverview = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => getAttendanceOverview(true),
+    onSuccess: (data) => {
+      queryClient.setQueryData(QUERY_KEYS.attendanceOverview, data);
+    },
+  });
+};
+
+export const useGroupAttendance = (id: number | null) =>
+  useQuery({
+    queryKey: QUERY_KEYS.groupAttendance(id ?? 0),
+    queryFn: () => getGroupAttendance(id!),
+    enabled: id !== null,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  })
+
+export const useMarkAttendance = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: markAttendance,
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.groupAttendance(vars.groupId),
+      })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.attendanceOverview })
+    },
+  })
 };
 
 export const useDashboard = () =>

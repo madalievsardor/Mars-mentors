@@ -7,7 +7,8 @@
     "notifications": "Bildirishnomalar",
     "navigation": "Navigatsiya",
     "account": "Mars akkaunt",
-    "logout": "Chiqish"
+    "logout": "Chiqish",
+    "attendance": "Davomat"
   },
   "login": {
     "title": "Mars IT Academy",
@@ -232,7 +233,8 @@
     "leftSince": "oxirgi marta: {{date}}",
     "students": "O'quvchilar",
     "groups": "Guruhlar",
-    "closeBtn": "yopish"
+    "closeBtn": "yopish",
+    "openAttendance": "Davomatni ochish"
   },
   "common": {
     "error": "Xatolik yuz berdi",
@@ -344,5 +346,42 @@
       "saturday": "Shan",
       "sunday": "Yak"
     }
+  },
+  "attendance": {
+    "title": "Davomat",
+    "subtitle": "Mentorlar guruhlari bo'yicha davomat — siyohrang va belgilanmagan darslar",
+    "refresh": "Yangilash",
+    "refreshing": "Yangilanmoqda...",
+    "scanning": "Guruhlar skanlanmoqda...",
+    "loading": "Yuklanmoqda...",
+    "loadError": "Davomatni yuklab bo'lmadi",
+    "unavailable": "Mars bilan bog'lanib bo'lmadi, qayta urinib ko'ring",
+    "heuristicNote": "🟣 Siyohrang = oxirgi darslarda butun guruh \"yo'q\" (mentor davomat olmagan, tuzatish kerak). 🔴 Qizil = haqiqiy, tarqoq \"yo'q\" (tegilmaydi). Mars API rangni bermaydi — bu taxminiy aniqlash, shubhada core'dan tekshiring.",
+    "statMentors": "Muammoli mentorlar",
+    "statViolet": "Siyohrang (jami)",
+    "statUnmarked": "Belgilanmagan",
+    "statGroups": "Skanlangan guruhlar",
+    "windowNote": "Oxirgi 14 kun: {{from}}–{{till}}",
+    "updatedAt": "yangilangan {{time}}",
+    "searchPlaceholder": "Mentor ismi bo'yicha qidirish...",
+    "noIssues": "Hammasi joyida — siyohrang/belgilanmagan davomat yo'q 🎉",
+    "noResults": "Hech narsa topilmadi",
+    "groupCount": "{{count}} guruh",
+    "lastLesson": "oxirgi dars",
+    "studentList": "O'quvchilar",
+    "frozen": "Muzlatilgan",
+    "modalTitle": "Davomat",
+    "legendPresent": "Bor",
+    "legendViolet": "Siyohrang (tuzatish kerak)",
+    "legendAbsent": "Yo'q (haqiqiy)",
+    "legendUnmarked": "Belgilanmagan",
+    "back": "Orqaga",
+    "violetShort": "siyohrang",
+    "unmarkedShort": "belgilanmagan",
+    "activeCount": "{{count}} faol",
+    "howItWorks": "Siyohrang qanday aniqlanadi?",
+    "editCell": "Davomatni o'zgartirish",
+    "markPresent": "Bor",
+    "markAbsent": "Yo'q"
   }
 }

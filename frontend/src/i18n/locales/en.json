@@ -7,7 +7,8 @@
     "notifications": "Notifications",
     "navigation": "Navigation",
     "account": "Mars account",
-    "logout": "Logout"
+    "logout": "Logout",
+    "attendance": "Attendance"
   },
   "login": {
     "title": "Mars IT Academy",
@@ -232,7 +233,8 @@
     "leftSince": "last seen: {{date}}",
     "students": "Students",
     "groups": "Groups",
-    "closeBtn": "close"
+    "closeBtn": "close",
+    "openAttendance": "Open attendance"
   },
   "common": {
     "error": "An error occurred",
@@ -344,5 +346,42 @@
       "saturday": "Sat",
       "sunday": "Sun"
     }
+  },
+  "attendance": {
+    "title": "Attendance",
+    "subtitle": "Attendance across mentor groups — violet & unmarked lessons",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing...",
+    "scanning": "Scanning groups...",
+    "loading": "Loading...",
+    "loadError": "Could not load attendance",
+    "unavailable": "Could not reach Mars, please retry",
+    "heuristicNote": "🟣 Violet = whole group \"absent\" on recent lessons (mentor didn't mark it, needs fixing). 🔴 Red = real, scattered absences (leave alone). Mars API doesn't expose colour — this is a heuristic; when in doubt verify in core.",
+    "statMentors": "Mentors with issues",
+    "statViolet": "Violet (total)",
+    "statUnmarked": "Unmarked",
+    "statGroups": "Groups scanned",
+    "windowNote": "Last 14 days: {{from}}–{{till}}",
+    "updatedAt": "updated {{time}}",
+    "searchPlaceholder": "Search by mentor name...",
+    "noIssues": "All good — no violet/unmarked attendance 🎉",
+    "noResults": "Nothing found",
+    "groupCount": "{{count}} groups",
+    "lastLesson": "last lesson",
+    "studentList": "Students",
+    "frozen": "Frozen",
+    "modalTitle": "Attendance",
+    "legendPresent": "Present",
+    "legendViolet": "Violet (fix)",
+    "legendAbsent": "Absent (real)",
+    "legendUnmarked": "Unmarked",
+    "back": "Back",
+    "violetShort": "violet",
+    "unmarkedShort": "unmarked",
+    "activeCount": "{{count}} active",
+    "howItWorks": "How is violet detected?",
+    "editCell": "Edit",
+    "markPresent": "Present",
+    "markAbsent": "Absent"
   }
 }

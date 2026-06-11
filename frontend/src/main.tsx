@@ -8,6 +8,8 @@ import Layout from './components/Layout'
 import DashboardPage from './pages/DashboardPage'
 import MentorsPage from './pages/MentorsPage'
 import InternsPage from './pages/InternsPage'
+import AttendancePage from './pages/AttendancePage'
+import GroupAttendancePage from './pages/GroupAttendancePage'
 import TutorsPage from './pages/TutorsPage'
 import NotificationsPage from './pages/NotificationsPage'
 import LoginPage from './pages/LoginPage'
@@ -39,6 +41,8 @@ function AppRoutes() {
         <Route index element={<DashboardPage />} />
         <Route path="mentors" element={<MentorsPage />} />
         <Route path="interns" element={<InternsPage />} />
+        <Route path="attendance" element={<AttendancePage />} />
+        <Route path="attendance/group/:groupId" element={<GroupAttendancePage />} />
         <Route path="tutors" element={<TutorsPage />} />
         {/* Backwards-compat: old /schedule path now points at Tutors. */}
         <Route path="schedule" element={<Navigate to="/tutors" replace />} />

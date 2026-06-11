@@ -7,6 +7,7 @@ export interface FilialOverview {
 }
 
 export interface MentorGroup {
+  id: number;
   name: string;
   category: string;
   time: string;
@@ -177,6 +178,90 @@ export interface InternDetail {
   badgeCount: number;
   bonusLessonCount: number;
   mentors: InternMentorLink[];
+}
+
+// ──────────── Attendance (davomat) ────────────
+
+export type CellState = 'present' | 'absent' | 'violet' | 'unmarked';
+
+export interface AttendanceDay {
+  date: string; // YYYY-MM-DD
+  teacher: string | null;
+  isReplaced: boolean;
+  comment: string;
+  isVioletDay: boolean;
+}
+
+export interface AttendanceCell {
+  date: string;
+  state: CellState;
+}
+
+export interface AttendanceStudentRow {
+  studentId: number;
+  name: string;
+  statusType: number; // 5 = active, 4 = frozen
+  frozen: boolean;
+  cells: AttendanceCell[];
+}
+
+export interface GroupAttendance {
+  groupId: number;
+  groupName: string;
+  mentorId: number;
+  mentorName: string;
+  branch: string;
+  windowFrom: string;
+  windowTill: string;
+  days: AttendanceDay[];
+  students: AttendanceStudentRow[];
+  suspectVioletCount: number;
+  unmarkedCount: number;
+}
+
+export interface GroupIssueSummary {
+  groupId: number;
+  groupName: string;
+  branch: string;
+  lastLessonDate: string | null;
+  suspectVioletCount: number;
+  unmarkedCount: number;
+  activeStudents: number;
+}
+
+export interface MentorAttendanceIssues {
+  mentorId: number;
+  mentorName: string;
+  branch: string;
+  totalIssues: number;
+  totalSuspectViolet: number;
+  totalUnmarked: number;
+  groups: GroupIssueSummary[];
+}
+
+export interface AttendanceMarkResult {
+  ok: boolean;
+  changed: boolean;
+  message?: string;
+}
+
+export interface AttendanceMarkPayload {
+  groupId: number;
+  studentId: number;
+  date: string;
+  status: 0 | 1;
+}
+
+export interface AttendanceOverview {
+  available: boolean;
+  generatedAt: string;
+  windowFrom: string;
+  windowTill: string;
+  totalGroupsScanned: number;
+  mentors: MentorAttendanceIssues[];
+  totalMentorsWithIssues: number;
+  totalSuspectViolet: number;
+  totalUnmarked: number;
 }
 
 // ──────────── Tutor work schedule (read-only) ────────────
