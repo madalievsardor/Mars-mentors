@@ -217,8 +217,11 @@ export class AttendanceService {
     // "Recent" / violet detection must only look at lesson days that have already
     // happened. The month window can include upcoming scheduled days (empty in
     // core too); those must never be flagged violet just because nobody is marked.
+    // Today is excluded too: a lesson scheduled for today may not have started yet
+    // (e.g. an evening group at 16:20), so an empty column for today must read as
+    // "unmarked" (Belgilanmagan), never violet.
     const todayStr = this.today();
-    const pastDates = dates.filter((d) => d <= todayStr);
+    const pastDates = dates.filter((d) => d < todayStr);
     const recentSet = new Set(pastDates.slice(-this.RECENT_DAYS));
 
     // Quick lookup: studentId → (date → status).

@@ -32,6 +32,8 @@ import type {
   UpdateTutorNamePayload,
   UpdateTutorProfilePayload,
   CreateTutorAccountPayload,
+  GroupAttendance,
+  CellState,
 } from '../types';
 
 export const QUERY_KEYS = {
@@ -237,10 +239,59 @@ export const useMarkAttendance = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: markAttendance,
-    onSuccess: (_data, vars) => {
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.groupAttendance(vars.groupId),
-      })
+    // Optimistic update: flip the targeted cell in the cached grid right away so
+    // the UI reflects the mark without a manual reload. We patch exactly what was
+    // written (the value we POSTed), so the cache stays truthful — no need to
+    // immediately refetch the group (a refetch could even briefly read stale Mars
+    // data). The cross-group overview counts are refreshed separately.
+    onMutate: async (vars) => {
+      const key = QUERY_KEYS.groupAttendance(vars.groupId)
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<GroupAttendance>(key)
+      if (previous) {
+        const violetDay =
+          previous.days.find((d) => d.date === vars.date)?.isVioletDay ?? false
+        // status 1 → present; status 0 → keep the column's violet tint if it's a
+        // flagged violet day, otherwise a plain (real) absence.
+        const nextState: CellState =
+          vars.status === 1 ? 'present' : violetDay ? 'violet' : 'absent'
+
+        let suspectVioletCount = previous.suspectVioletCount
+        let unmarkedCount = previous.unmarkedCount
+        const students = previous.students.map((s) => {
+          if (s.studentId !== vars.studentId || s.frozen) return s
+          return {
+            ...s,
+            cells: s.cells.map((c) => {
+              if (c.date !== vars.date) return c
+              // Keep the header issue counts roughly in sync as the cell changes.
+              if (c.state === 'violet' && nextState !== 'violet') {
+                suspectVioletCount = Math.max(0, suspectVioletCount - 1)
+              }
+              if (c.state === 'unmarked' && nextState !== 'unmarked') {
+                unmarkedCount = Math.max(0, unmarkedCount - 1)
+              }
+              return { ...c, state: nextState }
+            }),
+          }
+        })
+        queryClient.setQueryData<GroupAttendance>(key, {
+          ...previous,
+          students,
+          suspectVioletCount,
+          unmarkedCount,
+        })
+      }
+      return { previous, key }
+    },
+    onError: (_err, _vars, ctx) => {
+      // Roll the grid back to its pre-mutation snapshot on failure.
+      if (ctx?.previous) {
+        queryClient.setQueryData(ctx.key, ctx.previous)
+      }
+    },
+    onSettled: () => {
+      // Eventual consistency for the (separately cached) cross-group overview.
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.attendanceOverview })
     },
   })
