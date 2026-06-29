@@ -84,10 +84,16 @@ export class MarsService {
     try {
       const row = await this.prisma.marsAuth.findUnique({ where: { id: 1 } });
       if (row?.refreshToken) {
-        this.refreshToken = row.refreshToken;
-        if (row.accessToken) this.accessToken = row.accessToken;
-        this.logger.log('Loaded Mars refresh token from DB');
-        return;
+        const exp = this.decodeJwtExp(row.refreshToken);
+        const isExpired = exp !== null && exp < Date.now() / 1000;
+        if (!isExpired) {
+          this.refreshToken = row.refreshToken;
+          if (row.accessToken) this.accessToken = row.accessToken;
+          this.logger.log('Loaded Mars refresh token from DB');
+          return;
+        }
+        this.logger.warn('DB Mars refresh token is expired — falling back to env');
+        await this.prisma.marsAuth.delete({ where: { id: 1 } }).catch(() => {});
       }
     } catch (e) {
       this.logger.warn(`DB load of mars_auth failed: ${(e as Error).message}`);
