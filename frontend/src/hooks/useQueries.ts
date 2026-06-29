@@ -268,7 +268,7 @@ export const useMarkAttendance = () => {
               if (c.state === 'violet' && nextState !== 'violet') {
                 suspectVioletCount = Math.max(0, suspectVioletCount - 1)
               }
-              if (c.state === 'unmarked' && nextState !== 'unmarked') {
+              if (c.state === 'unmarked') {
                 unmarkedCount = Math.max(0, unmarkedCount - 1)
               }
               return { ...c, state: nextState }
