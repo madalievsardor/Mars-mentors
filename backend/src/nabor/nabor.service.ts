@@ -28,7 +28,7 @@ export class NaborService {
       for (let guard = 0; guard < 30; guard++) {
         const data = await this.mars.authedGet<{ page_count: number; groups: unknown[] }>(
           '/api/v1/groups',
-          { status: 'nabor', page } as Record<string, unknown>,
+          { status: 'nabor', page } as Record<string, string | number>,
         );
         const groups = data?.groups;
         if (!Array.isArray(groups) || groups.length === 0) break;
