@@ -25,6 +25,7 @@ import {
   getAttendanceOverview,
   getGroupAttendance,
   markAttendance,
+  getTutorBookings,
 } from '../api/client';
 import type {
   NotificationSetting,
@@ -52,6 +53,7 @@ export const QUERY_KEYS = {
   branches: ['tutors', 'branches'] as const,
   attendanceOverview: ['attendance', 'overview'] as const,
   groupAttendance: (id: number) => ['attendance', 'group', id] as const,
+  tutorBookings: (id: number) => ['tutors', id, 'bookings'] as const,
 };
 
 export const useInterns = () =>
@@ -379,3 +381,11 @@ export const useTriggerSync = () => {
     },
   });
 };
+
+export const useTutorBookings = (id: number | null) =>
+  useQuery({
+    queryKey: QUERY_KEYS.tutorBookings(id ?? 0),
+    queryFn: () => getTutorBookings(id!),
+    enabled: id !== null,
+    staleTime: 5 * 60 * 1000,
+  });

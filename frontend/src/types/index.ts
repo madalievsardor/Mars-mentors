@@ -407,3 +407,20 @@ export interface CreateTutorAccountResult {
   branch?: string;
   branchId?: number;
 }
+
+// ──────────── Tutor bookings ────────────
+
+export interface BookingEntry {
+  id: number;
+  studentName: string;
+  topic: string;
+  dateTime: string;
+  status: string;
+}
+
+export interface TutorBookingStats {
+  tutorId: number;
+  total: number;
+  byStatus: Record<string, number>;
+  recent: BookingEntry[];
+}

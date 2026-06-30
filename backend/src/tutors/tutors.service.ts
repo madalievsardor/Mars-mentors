@@ -23,6 +23,8 @@ import {
   BranchesResponse,
   CreateTutorAccountResult,
   TutorScheduleType,
+  BookingEntry,
+  TutorBookingStats,
 } from './tutors.types';
 import { CreateTutorAccountDto } from './dto/create-tutor-account.dto';
 
@@ -697,6 +699,53 @@ export class TutorsService {
    * Failures at either step are caught and reported with Mars's actual reason
    * (logged in full server-side) instead of bubbling up as a generic 500.
    */
+
+  /** Booking stats for one tutor from Mars API (`/api/v2/controls/booking/all`). Never throws. */
+  async getTutorBookingStats(tutorId: number): Promise<TutorBookingStats> {
+    const empty: TutorBookingStats = { tutorId, total: 0, byStatus: {}, recent: [] };
+    try {
+      const pageSize = 100;
+      let page = 1;
+      const all: BookingEntry[] = [];
+
+      for (let guard = 0; guard < 20; guard++) {
+        const rows = await this.mars.authedGet<unknown[]>(
+          '/api/v2/controls/booking/all',
+          { page, per_page: pageSize } as Record<string, number>,
+        );
+        if (!Array.isArray(rows) || rows.length === 0) break;
+
+        for (const r of rows) {
+          const row = r as Record<string, unknown>;
+          if (Number(row['user_id']) !== tutorId) continue;
+          const student = (row['student'] as Record<string, string> | null) ?? {};
+          const name = `${student['first_name'] ?? ''} ${student['last_name'] ?? ''}`.trim() || `#${row['student_id']}`;
+          all.push({
+            id: Number(row['id']),
+            studentName: name,
+            topic: String(row['topic'] ?? ''),
+            dateTime: String(row['dateTime'] ?? ''),
+            status: String(row['status'] ?? ''),
+          });
+        }
+
+        if (rows.length < pageSize) break;
+        page++;
+      }
+
+      all.sort((a, b) => b.dateTime.localeCompare(a.dateTime));
+      const byStatus: Record<string, number> = {};
+      for (const e of all) {
+        byStatus[e.status] = (byStatus[e.status] ?? 0) + 1;
+      }
+
+      return { tutorId, total: all.length, byStatus, recent: all.slice(0, 20) };
+    } catch (err) {
+      this.logger.warn(`getTutorBookingStats(${tutorId}): ${(err as Error).message}`);
+      return empty;
+    }
+  }
+
   async createTutorAccount(
     dto: CreateTutorAccountDto,
   ): Promise<CreateTutorAccountResult> {

@@ -137,6 +137,23 @@ export interface TutorSlotsResponse {
   totalHours: number;
 }
 
+// ──────────── booking stats ────────────
+
+export interface BookingEntry {
+  id: number;
+  studentName: string;
+  topic: string;
+  dateTime: string;
+  status: string;
+}
+
+export interface TutorBookingStats {
+  tutorId: number;
+  total: number;
+  byStatus: Record<string, number>;
+  recent: BookingEntry[];
+}
+
 // ──────────── write (edit) shapes ────────────
 
 /** One 30-minute slot template from GET /api/v1/users/slots_list. */

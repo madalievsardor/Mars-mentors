@@ -25,6 +25,7 @@ import type {
   GroupAttendance,
   AttendanceMarkPayload,
   AttendanceMarkResult,
+  TutorBookingStats,
 } from '../types';
 
 const api = axios.create({
@@ -112,6 +113,11 @@ export const getTutors = async (): Promise<TutorsResponse> => {
 
 export const getTutorSlots = async (id: number): Promise<TutorSlotsResponse> => {
   const { data } = await api.get<TutorSlotsResponse>(`/tutors/${id}/slots`);
+  return data;
+};
+
+export const getTutorBookings = async (id: number): Promise<TutorBookingStats> => {
+  const { data } = await api.get<TutorBookingStats>(`/tutors/${id}/bookings`);
   return data;
 };
 

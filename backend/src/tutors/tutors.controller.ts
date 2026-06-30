@@ -12,6 +12,7 @@ import { TutorsService } from './tutors.service';
 import {
   BranchesResponse,
   CreateTutorAccountResult,
+  TutorBookingStats,
   TutorCandidatesResponse,
   TutorsResponse,
   TutorSlotsResponse,
@@ -67,6 +68,14 @@ export class TutorsController {
   async refresh(): Promise<TutorsResponse> {
     this.tutorsService.invalidateCache();
     return this.tutorsService.getTutors();
+  }
+
+  /** Booking count + recent bookings for one tutor (from Mars API). */
+  @Get(':id/bookings')
+  async getTutorBookings(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<TutorBookingStats> {
+    return this.tutorsService.getTutorBookingStats(id);
   }
 
   /** Weekly work schedule (booked slots per weekday) for one tutor. */

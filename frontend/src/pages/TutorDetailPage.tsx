@@ -17,7 +17,7 @@ import {
   Trash2,
   UserMinus,
 } from 'lucide-react'
-import { useTutors, useTutorSlots, QUERY_KEYS } from '../hooks/useQueries'
+import { useTutors, useTutorSlots, useTutorBookings, QUERY_KEYS } from '../hooks/useQueries'
 import { useQueryClient } from '@tanstack/react-query'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
@@ -48,6 +48,7 @@ export default function TutorDetailPage() {
     isError: slotsError,
     refetch: refetchSlots,
   } = useTutorSlots(tutorId)
+  const { data: bookingStats, isLoading: bookingsLoading } = useTutorBookings(tutorId)
 
   const tutor = useMemo(
     () => tutorsData?.tutors.find((tu) => tu.id === tutorId) ?? null,
@@ -298,22 +299,104 @@ export default function TutorDetailPage() {
         )}
       </div>
 
-      {/* Booking stats вЂ” placeholder (backend endpoint yo'q hali) */}
-      <div className="bg-[#161b27] border border-white/[0.08] rounded-2xl p-5">
-        <div className="flex items-center gap-2 mb-4 text-slate-500 text-xs uppercase tracking-wider font-semibold">
-          <BarChart3 size={13} />
-          Kunlik booking statistikasi
+      {/* Booking stats */}
+      <div className=”bg-[#161b27] border border-white/[0.08] rounded-2xl p-5”>
+        <div className=”flex items-center justify-between mb-4”>
+          <div className=”flex items-center gap-2 text-slate-500 text-xs uppercase tracking-wider font-semibold”>
+            <BarChart3 size={13} />
+            Booking statistikasi
+          </div>
+          {bookingStats && bookingStats.total > 0 && (
+            <span className=”px-2.5 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/25 text-indigo-300 text-xs font-semibold tabular-nums”>
+              {bookingStats.total} ta jami
+            </span>
+          )}
         </div>
-        <div className="flex flex-col items-center py-10 gap-3 text-slate-700">
-          <BarChart3 size={32} />
-          <p className="text-sm text-slate-600">
-            Booking tarixi endpointi hali backend da yo'q
-          </p>
-          <p className="text-xs text-slate-700">
-            GET /api/tutors/:id/bookings qo'shilgach, oxirgi 7вЂ“30 kunlik
-            statistika shu yerda ko'rsatiladi
-          </p>
-        </div>
+
+        {bookingsLoading && (
+          <div className=”py-8”>
+            <LoadingSpinner message=”Bookinglar yuklanmoqda...” />
+          </div>
+        )}
+
+        {!bookingsLoading && bookingStats && bookingStats.total === 0 && (
+          <div className=”flex flex-col items-center py-8 gap-2 text-slate-700”>
+            <BarChart3 size={28} />
+            <p className=”text-sm text-slate-600”>Hozircha booking yo'q</p>
+          </div>
+        )}
+
+        {!bookingsLoading && bookingStats && bookingStats.total > 0 && (
+          <div className=”space-y-4”>
+            {/* Status breakdown */}
+            <div className=”flex flex-wrap gap-2”>
+              {Object.entries(bookingStats.byStatus).map(([status, count]) => {
+                const tone =
+                  status === 'booked' ? 'emerald' :
+                  status === 'cancelled' ? 'red' :
+                  status === 'completed' ? 'sky' : 'slate'
+                const cls: Record<string, string> = {
+                  emerald: 'bg-emerald-500/10 border-emerald-500/25 text-emerald-300',
+                  red: 'bg-red-500/10 border-red-500/25 text-red-300',
+                  sky: 'bg-sky-500/10 border-sky-500/25 text-sky-300',
+                  slate: 'bg-slate-500/10 border-slate-500/25 text-slate-400',
+                }
+                return (
+                  <span
+                    key={status}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl border text-xs font-semibold ${cls[tone]}`}
+                  >
+                    {status} — {count} ta
+                  </span>
+                )
+              })}
+            </div>
+
+            {/* Recent bookings table */}
+            <div className=”overflow-hidden rounded-xl border border-white/[0.06]”>
+              <table className=”w-full text-sm”>
+                <thead>
+                  <tr className=”border-b border-white/[0.06]”>
+                    <th className=”text-left py-2.5 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider”>O'quvchi</th>
+                    <th className=”text-left py-2.5 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider”>Mavzu</th>
+                    <th className=”text-left py-2.5 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider”>Sana</th>
+                    <th className=”text-center py-2.5 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider”>Holat</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bookingStats.recent.map((b) => {
+                    const tone =
+                      b.status === 'booked' ? 'emerald' :
+                      b.status === 'cancelled' ? 'red' :
+                      b.status === 'completed' ? 'sky' : 'slate'
+                    const badge: Record<string, string> = {
+                      emerald: 'bg-emerald-500/10 text-emerald-300',
+                      red: 'bg-red-500/10 text-red-300',
+                      sky: 'bg-sky-500/10 text-sky-300',
+                      slate: 'bg-slate-500/10 text-slate-400',
+                    }
+                    const dt = new Date(b.dateTime)
+                    const dateStr = isNaN(dt.getTime())
+                      ? b.dateTime
+                      : `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')} ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
+                    return (
+                      <tr key={b.id} className=”border-b border-white/[0.04] hover:bg-white/[0.02]”>
+                        <td className=”py-2.5 px-4 text-slate-200 font-medium”>{b.studentName}</td>
+                        <td className=”py-2.5 px-4 text-slate-400 max-w-[120px] truncate”>{b.topic || '—'}</td>
+                        <td className=”py-2.5 px-4 text-slate-500 tabular-nums text-xs”>{dateStr}</td>
+                        <td className=”py-2.5 px-4 text-center”>
+                          <span className={`inline-block px-2 py-0.5 rounded-lg text-xs font-semibold ${badge[tone]}`}>
+                            {b.status}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
