@@ -1,15 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, Search, Building2, ChevronRight, AlertTriangle } from 'lucide-react'
+import { Users, Search, ChevronRight, AlertTriangle } from 'lucide-react'
 import { useGroupsList } from '../hooks/useQueries'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import type { GroupListItem } from '../types'
-
-const DAYS_LABEL: Record<number, string> = {
-  1: 'Du·Chor·Jum',
-  2: 'Se·Pay·Shan',
-}
 
 function IssueBadge({ violet, unmarked }: { violet: number; unmarked: number }) {
   if (violet === 0 && unmarked === 0) return null
