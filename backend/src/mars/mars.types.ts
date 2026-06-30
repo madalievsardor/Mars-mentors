@@ -28,6 +28,26 @@ export interface MarsCategory {
   program?: unknown;
 }
 
+/** Single-group detail: xona ma'lumoti */
+export interface MarsRoom {
+  id: number;
+  name: string;
+  external_id?: number;
+}
+
+/** Single-group detail: kurator ma'lumoti */
+export interface MarsCurator {
+  id: number;
+  first_name: string;
+  last_name: string;
+}
+
+/** Single-group detail: kurs/yo'nalish (GET /groups/{id} da "course" key'i orqali keladi) */
+export interface MarsCourse {
+  id: number;
+  name: string;
+}
+
 export interface SimpleMentorGroup {
   id: number;
   name: string;
@@ -48,8 +68,18 @@ export interface MarsGroup {
   user: MarsGroupUser;
   branch: MarsBranch;
   category: MarsCategory;
+  /** GET /groups/{id} da "course" key'i orqali keladi (category bilan bir xil ma'no) */
+  course?: MarsCourse | null;
+  /** Dars xonasi — faqat GET /groups/{id} da mavjud */
+  room?: MarsRoom | null;
+  /** Kurator — faqat GET /groups/{id} da mavjud, ba'zi guruhlarda null */
+  curator?: MarsCurator | null;
   students_number: number;
   lesson_start_time: string;
+  /** Dars tugash vaqti — faqat GET /groups/{id} da mavjud */
+  lesson_end_time?: string | null;
+  /** Haftada necha kun: 1=toq kunlar, 2=juft kunlar — faqat GET /groups/{id} da */
+  days?: number | null;
   status: string;
   /** ISO timestamps marking the group's lifecycle window (used for the
    *  monthly-dynamics chart — a group is "active" in a month if the month

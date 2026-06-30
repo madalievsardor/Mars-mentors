@@ -8,7 +8,6 @@ import {
   UserMinus,
   Search,
   RefreshCw,
-  ChevronDown,
   Building2,
   X,
   CalendarClock,
@@ -22,49 +21,15 @@ import {
   Gift,
   AlertTriangle,
   Crown,
-  TrendingUp,
-  TrendingDown,
-  Minus,
 } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
-import { useInterns, useInternDetail, useMentors } from '../hooks/useQueries'
+import { useInterns, useInternDetail } from '../hooks/useQueries'
 import { useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS } from '../hooks/useQueries'
 import StatCard from '../components/StatCard'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
-import {
-  getGradeRec,
-  getMonthsElapsed,
-  needToStay,
-  needToUp,
-  resolveName,
-  normalizeName,
-  CYCLE_MONTHS,
-  type GradeRec,
-} from '../utils/grade'
-import type { MentorInterns, InternDetail } from '../types'
-
-// Grade-recommendation badge styling (intern % of total students). Mirrors the
-// indicator that used to live on the Mentors page; pure indicator, does not
-// change the real grade.
-const GRADE_REC_CONFIG: Record<GradeRec, { badgeClass: string; Icon: typeof TrendingUp; labelKey: string }> = {
-  up: {
-    badgeClass: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25',
-    Icon: TrendingUp,
-    labelKey: 'mentors.gradeUp',
-  },
-  stay: {
-    badgeClass: 'bg-slate-500/15 text-slate-400 border border-slate-500/20',
-    Icon: Minus,
-    labelKey: 'mentors.gradeStay',
-  },
-  down: {
-    badgeClass: 'bg-red-500/15 text-red-300 border border-red-500/25',
-    Icon: TrendingDown,
-    labelKey: 'mentors.gradeDown',
-  },
-}
+import type { InternBrief, InternDetail } from '../types'
 
 // Grade → colour. Keys are the int-server camelCase grade ids.
 const GRADE_STYLE: Record<string, string> = {
@@ -105,130 +70,52 @@ function statusDot(status: string) {
 const STATUS_FILTERS = ['all', 'active', 'frozen', 'archived'] as const
 type StatusFilter = (typeof STATUS_FILTERS)[number]
 
-// Mentor-presence filter: which mentors to list by their intern count.
-const MENTOR_FILTERS = ['with', 'without', 'all'] as const
-type MentorFilter = (typeof MENTOR_FILTERS)[number]
-
-function MentorRow({
-  mentor,
-  studentCount,
+// Flat intern row shown in the main list.
+function InternFlatRow({
+  intern,
+  mentorName,
   onSelect,
 }: {
-  mentor: MentorInterns
-  // Mars student count matched by name, or null when this int-server mentor
-  // can't be bridged to a Mars mentor (then no grade recommendation is shown).
-  studentCount: number | null
+  intern: InternBrief
+  mentorName: string
   onSelect: (id: string) => void
 }) {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-  // Heat: more interns → warmer left border; zero interns → neutral grey.
-  const heat =
-    mentor.internCount === 0
-      ? 'border-l-slate-600'
-      : mentor.internCount >= 10
-        ? 'border-l-red-500'
-        : mentor.internCount >= 6
-          ? 'border-l-amber-500'
-          : 'border-l-emerald-500'
-
-  // Grade recommendation: only when a Mars student count is matched and > 0.
-  const showGradeRec = studentCount !== null && studentCount > 0
-  const internPct = showGradeRec ? (mentor.internCount / studentCount) * 100 : 0
-  const gradeRec = showGradeRec ? getGradeRec(internPct) : null
-  const recCfg = gradeRec ? GRADE_REC_CONFIG[gradeRec] : null
-  const monthsElapsed = getMonthsElapsed()
-  const stayCount = showGradeRec ? needToStay(studentCount) : 0
-  const upCount = showGradeRec ? needToUp(studentCount) : 0
-
   return (
-    <div className={`bg-[#161b27] border border-white/[0.06] border-l-2 ${heat} rounded-2xl overflow-hidden`}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-4 p-4 text-left hover:bg-white/[0.02] transition-colors"
+    <button
+      onClick={() => onSelect(intern.id)}
+      className="w-full flex items-center gap-3 bg-[#161b27] border border-white/[0.06] hover:bg-white/[0.04] rounded-xl px-4 py-3 text-left transition-colors"
+    >
+      {/* Avatar + status dot */}
+      <div className="relative w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-sm font-bold flex-shrink-0">
+        {intern.name.charAt(0).toUpperCase()}
+        <span
+          title={t(`interns.status.${intern.status}`, intern.status)}
+          className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-[#161b27] ${statusDot(intern.status)}`}
+        />
+      </div>
+
+      {/* Name + mentor name */}
+      <div className="flex-1 min-w-0">
+        <p className="text-slate-200 text-sm font-semibold truncate">{intern.name}</p>
+        <p className="text-slate-500 text-[11px] truncate">{mentorName}</p>
+      </div>
+
+      {/* Branch */}
+      {intern.branch && (
+        <div className="hidden sm:flex items-center gap-1 text-slate-500 text-xs flex-shrink-0">
+          <Building2 size={11} />
+          <span className="truncate max-w-[140px]">{intern.branch}</span>
+        </div>
+      )}
+
+      {/* Grade badge */}
+      <span
+        className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full flex-shrink-0 ${gradeChip(intern.grade)}`}
       >
-        <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-sm font-bold flex-shrink-0">
-          {mentor.mentorName.charAt(0).toUpperCase()}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-slate-200 text-sm truncate">{mentor.mentorName}</p>
-          <div className="flex items-center gap-1.5 mt-0.5 text-slate-500 text-xs">
-            <Building2 size={11} />
-            <span className="truncate">{mentor.branches.join(', ') || '—'}</span>
-          </div>
-        </div>
-
-        {/* Grade breakdown chips */}
-        <div className="hidden sm:flex items-center gap-1.5">
-          {Object.entries(mentor.gradeBreakdown).map(([g, c]) => (
-            <span key={g} className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${gradeChip(g)}`}>
-              {GRADE_LABEL[g] ?? g} {c}
-            </span>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {mentor.internCount === 0 ? (
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-500/15 text-slate-400 border border-slate-500/25">
-              {t('interns.noInterns')}
-            </span>
-          ) : (
-            <>
-              <span className="text-2xl font-bold text-white tabular-nums">{mentor.internCount}</span>
-              <span className="text-slate-600 text-xs">{t('interns.interns')}</span>
-            </>
-          )}
-          <ChevronDown size={16} className={`text-slate-600 transition-transform ${open ? 'rotate-180' : ''}`} />
-        </div>
-      </button>
-
-      {/* Grade recommendation (indicator only) — shown when the int-server mentor
-          is bridged by name to a Mars mentor with students. */}
-      {recCfg && gradeRec && (
-        <div className="px-4 pb-3.5 -mt-1.5 flex flex-col sm:flex-row sm:items-center gap-x-3 gap-y-1.5">
-          <span
-            title={t('mentors.gradeRec')}
-            className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full w-fit ${recCfg.badgeClass}`}
-          >
-            <recCfg.Icon size={11} />
-            {internPct.toFixed(1)}% · {t(recCfg.labelKey)} · {t('mentors.cycleProgress', { elapsed: monthsElapsed, total: CYCLE_MONTHS })}
-          </span>
-          <p className="text-slate-500 text-[11px] leading-snug">
-            {t('mentors.now')} {mentor.internCount} · {t('mentors.needToStay')} ≥{stayCount} · {t('mentors.needToUp')} ≥{upCount}
-          </p>
-        </div>
-      )}
-
-      {open && (
-        <div className="px-4 pb-4 pt-1 border-t border-white/[0.05]">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
-            {mentor.interns.map((it) => (
-              <button
-                key={it.id}
-                onClick={() => onSelect(it.id)}
-                className="flex items-center gap-2.5 bg-white/[0.02] hover:bg-white/[0.06] rounded-xl px-3 py-2 text-left transition-colors cursor-pointer"
-              >
-                <div className="relative w-7 h-7 rounded-lg bg-white/[0.05] text-slate-300 flex items-center justify-center text-xs font-semibold flex-shrink-0">
-                  {it.name.charAt(0).toUpperCase()}
-                  <span
-                    title={t(`interns.status.${it.status}`, it.status)}
-                    className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-[#161b27] ${statusDot(it.status)}`}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-slate-200 text-sm truncate">{it.name}</p>
-                  <p className="text-slate-600 text-[11px] truncate">{it.sphere}</p>
-                </div>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${gradeChip(it.grade)}`}>
-                  {GRADE_LABEL[it.grade] ?? it.grade}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+        {GRADE_LABEL[intern.grade] ?? intern.grade}
+      </span>
+    </button>
   )
 }
 
@@ -503,7 +390,6 @@ function InternDetailModal({ id, onClose }: { id: string; onClose: () => void })
 export default function InternsPage() {
   const { t } = useTranslation()
   const { data, isLoading, isError, error, refetch } = useInterns()
-  const { data: marsMentors } = useMentors()
   // Data arrived but int-server is still waking (Render cold start): show a
   // banner instead of misleading zeros; useInterns keeps polling until ready.
   const waking = !!data && !data.available
@@ -516,43 +402,30 @@ export default function InternsPage() {
     (location.state as { search?: string } | null)?.search ?? ''
   const [query, setQuery] = useState(initialSearch)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [mentorFilter, setMentorFilter] = useState<MentorFilter>('with')
   const [branchFilter, setBranchFilter] = useState<string>('all')
   const [refreshing, setRefreshing] = useState(false)
 
-  // Unique, sorted list of branches across all mentors (drop empty strings).
-  const branches = useMemo(() => {
+  // Flatten all interns from all mentors into a single list with mentor name attached.
+  const flatInterns = useMemo(() => {
     if (!data) return []
-    const set = new Set<string>()
+    const result: Array<{ intern: InternBrief; mentorName: string }> = []
     for (const m of data.mentors) {
-      for (const b of m.branches) {
-        const name = (b ?? '').trim()
-        if (name) set.add(name)
+      for (const intern of m.interns) {
+        result.push({ intern, mentorName: m.mentorName })
       }
     }
-    return Array.from(set).sort((a, b) => a.localeCompare(b))
+    return result
   }, [data])
 
-  // Bridge each int-server mentor (by normalized name) to a Mars mentor's student
-  // count, so we can compute the grade recommendation (interns / students).
-  // EXACT → MANUAL → FUZZY ≤ 3, mirroring the Mentors page. Keyed by normalized
-  // int-server mentor name → Mars student count.
-  const studentCountByName = useMemo(() => {
-    const studentByNorm = new Map<string, number>()
-    for (const m of marsMentors ?? []) {
-      studentByNorm.set(normalizeName(m.name), m.studentCount)
+  // Unique, sorted list of branches from individual intern records.
+  const branches = useMemo(() => {
+    const set = new Set<string>()
+    for (const { intern } of flatInterns) {
+      const name = (intern.branch ?? '').trim()
+      if (name) set.add(name)
     }
-    const marsNorms = Array.from(studentByNorm.keys())
-
-    const resolved = new Map<string, number>()
-    for (const m of data?.mentors ?? []) {
-      const matched = resolveName(m.mentorName, marsNorms)
-      if (matched !== null) {
-        resolved.set(normalizeName(m.mentorName), studentByNorm.get(matched)!)
-      }
-    }
-    return resolved
-  }, [marsMentors, data])
+    return Array.from(set).sort((a, b) => a.localeCompare(b))
+  }, [flatInterns])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -565,43 +438,30 @@ export default function InternsPage() {
   }
 
   const filtered = useMemo(() => {
-    if (!data) return []
     const q = query.trim().toLowerCase()
+    let rows = flatInterns
 
-    let rows = data.mentors
-    if (q) rows = rows.filter((m) => m.mentorName.toLowerCase().includes(q))
-
-    // Branch filter: keep only mentors that belong to the chosen branch.
-    if (branchFilter !== 'all') {
-      rows = rows.filter((m) => m.branches.some((b) => (b ?? '').trim() === branchFilter))
+    // Search by intern name or mentor name.
+    if (q) {
+      rows = rows.filter(
+        ({ intern, mentorName }) =>
+          intern.name.toLowerCase().includes(q) ||
+          mentorName.toLowerCase().includes(q),
+      )
     }
 
-    // Split: mentors that have interns vs. zero-intern mentors. The status filter
-    // only makes sense for mentors with interns; zero-intern mentors have no
-    // interns to match, so they bypass it entirely.
-    let withInterns = rows.filter((m) => m.internCount > 0)
-    const withoutInterns = rows.filter((m) => m.internCount === 0)
-
-    // Status filter: keep only interns matching the chosen status, recompute the
-    // mentor's count/grade chips from what remains, and drop mentors left empty.
+    // Status filter: applied directly to each intern.
     if (statusFilter !== 'all') {
-      withInterns = withInterns
-        .map((m) => {
-          const interns = m.interns.filter((it) => it.status === statusFilter)
-          const gradeBreakdown: Record<string, number> = {}
-          for (const it of interns) {
-            gradeBreakdown[it.grade] = (gradeBreakdown[it.grade] ?? 0) + 1
-          }
-          return { ...m, interns, internCount: interns.length, gradeBreakdown }
-        })
-        .filter((m) => m.internCount > 0)
+      rows = rows.filter(({ intern }) => intern.status === statusFilter)
     }
 
-    // Mentor-presence select: only-with (default), only-without, or all.
-    if (mentorFilter === 'without') return withoutInterns
-    if (mentorFilter === 'all') return [...withInterns, ...withoutInterns]
-    return withInterns
-  }, [data, query, statusFilter, mentorFilter, branchFilter])
+    // Branch filter: applied to the intern's own branch.
+    if (branchFilter !== 'all') {
+      rows = rows.filter(({ intern }) => (intern.branch ?? '').trim() === branchFilter)
+    }
+
+    return rows
+  }, [flatInterns, query, statusFilter, branchFilter])
 
   // Per-status totals for the filter buttons (whole dataset, ignores search).
   const statusCounts = useMemo<Record<string, number>>(
@@ -682,7 +542,7 @@ export default function InternsPage() {
         </div>
       )}
 
-      {/* Status filter */}
+      {/* Filters */}
       {ready && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-slate-600 uppercase tracking-wider font-semibold mr-1">
@@ -708,7 +568,7 @@ export default function InternsPage() {
             )
           })}
 
-          {/* Branch filter (select): all branches or one specific branch. */}
+          {/* Branch filter */}
           <label className="ml-auto flex items-center gap-2 text-xs text-slate-400">
             <span className="uppercase tracking-wider font-semibold text-slate-600">
               {t('interns.branchFilter')}
@@ -727,27 +587,12 @@ export default function InternsPage() {
             </select>
           </label>
 
-          {/* Mentor-presence filter (select): with / without / all interns. */}
-          <label className="flex items-center gap-2 text-xs text-slate-400">
-            <span className="uppercase tracking-wider font-semibold text-slate-600">
-              {t('interns.mentorFilter')}
+          {/* Filtered count */}
+          {(query || statusFilter !== 'all' || branchFilter !== 'all') && (
+            <span className="text-slate-600 text-xs tabular-nums">
+              {filtered.length} {t('interns.interns')}
             </span>
-            <select
-              value={mentorFilter}
-              onChange={(e) => setMentorFilter(e.target.value as MentorFilter)}
-              className="bg-[#161b27] border border-white/[0.1] rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500/50 cursor-pointer"
-            >
-              <option value="with">
-                {t('interns.mentorFilterWith')} ({data.mentorsWithInterns})
-              </option>
-              <option value="without">
-                {t('interns.mentorFilterWithout')} ({data.mentorsWithoutInterns})
-              </option>
-              <option value="all">
-                {t('interns.mentorFilterAll')} ({data.totalMentors})
-              </option>
-            </select>
-          </label>
+          )}
         </div>
       )}
 
@@ -760,14 +605,14 @@ export default function InternsPage() {
         />
       )}
 
-      {/* List */}
+      {/* Flat intern list */}
       {ready && filtered.length > 0 && (
-        <div className="space-y-2.5">
-          {filtered.map((m) => (
-            <MentorRow
-              key={m.mentorId}
-              mentor={m}
-              studentCount={studentCountByName.get(normalizeName(m.mentorName)) ?? null}
+        <div className="space-y-1.5">
+          {filtered.map(({ intern, mentorName }) => (
+            <InternFlatRow
+              key={intern.id}
+              intern={intern}
+              mentorName={mentorName}
               onSelect={setSelectedInternId}
             />
           ))}

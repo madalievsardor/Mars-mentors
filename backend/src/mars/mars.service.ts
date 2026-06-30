@@ -396,6 +396,23 @@ export class MarsService {
   }
 
   /**
+   * Fetch full detail for a single group (GET /groups/{id}).
+   * Returns richer fields than the list endpoint: room, curator, course,
+   * lesson_end_time, days. Returns null (never throws) so callers can degrade
+   * gracefully when the group is not found or Mars is unavailable.
+   */
+  async getGroupDetail(groupId: number): Promise<MarsGroup | null> {
+    try {
+      return await this.authedGet<MarsGroup>(`/api/v1/groups/${groupId}`);
+    } catch (err) {
+      this.logger.warn(
+        `Could not fetch group detail for ${groupId}: ${(err as Error).message}`,
+      );
+      return null;
+    }
+  }
+
+  /**
    * Fetch the active student roster (id + name) of a single group.
    *
    * Uses `GET /attendance/{group_id}` (the same endpoint the attendance UI hits),

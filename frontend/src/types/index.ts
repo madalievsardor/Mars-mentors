@@ -203,6 +203,8 @@ export interface AttendanceStudentRow {
   statusType: number; // 5 = active, 4 = frozen
   frozen: boolean;
   cells: AttendanceCell[];
+  /** True when this student is a registered intern in the int-server. */
+  isIntern?: boolean;
 }
 
 export interface GroupAttendance {
@@ -217,6 +219,18 @@ export interface GroupAttendance {
   students: AttendanceStudentRow[];
   suspectVioletCount: number;
   unmarkedCount: number;
+  /** Dars xonasi nomi */
+  roomName: string | null;
+  /** Kurator ismi */
+  curatorName: string | null;
+  /** Yo'nalish / kurs nomi */
+  courseName: string | null;
+  /** Dars boshlanish vaqti "HH:MM" */
+  lessonStartTime: string | null;
+  /** Dars tugash vaqti "HH:MM" */
+  lessonEndTime: string | null;
+  /** Haftada necha kun: 1=toq, 2=juft */
+  lessonDays: number | null;
 }
 
 export interface GroupIssueSummary {

@@ -140,12 +140,12 @@
   },
   "interns": {
     "title": "Interns",
-    "subtitle": "How many interns each mentor has (int-server)",
+    "subtitle": "All interns — flat list (int-server)",
     "totalInterns": "Total interns",
     "totalMentors": "Total mentors",
     "withInterns": "Mentors with interns",
     "unassigned": "Unassigned",
-    "searchPlaceholder": "Search mentor...",
+    "searchPlaceholder": "Search intern or mentor...",
     "mentorCount": "{{count}} mentors",
     "internCount": "{{count}} interns",
     "interns": "interns",
@@ -157,7 +157,7 @@
     "loadError": "Failed to load interns (int-server not responding)",
     "waking": "Server is waking up...",
     "wakingHint": "The intern server was asleep; data will load automatically in a few seconds.",
-    "noResults": "No mentor found",
+    "noResults": "No interns found",
     "noData": "No intern data yet",
     "showInterns": "Show interns",
     "hideInterns": "Hide",
@@ -222,6 +222,7 @@
     "close": "Close",
     "groupCount": "Number of groups",
     "studentCount": "Number of students",
+    "internCount": "Interns",
     "groupList": "Group list",
     "noGroups": "No groups available",
     "trend": "Last 30 days trend",
@@ -382,6 +383,13 @@
     "howItWorks": "How is violet detected?",
     "editCell": "Edit",
     "markPresent": "Present",
-    "markAbsent": "Absent"
+    "markAbsent": "Absent",
+    "curator": "Curator",
+    "course": "Course",
+    "room": "Room",
+    "lessonTime": "Time",
+    "lessonDaysEven": "Even days",
+    "lessonDaysOdd": "Odd days",
+    "lessonDaysCount": "{{count}} days/week"
   }
 }

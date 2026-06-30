@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import axios from 'axios';
 import { MarsService } from '../mars/mars.service';
 import {
   MarsTutorsStatsResponse,
@@ -643,17 +644,58 @@ export class TutorsService {
   }
 
   /**
+   * Pull a human-readable reason out of a failed Mars call so the dashboard can
+   * show *why* a create/promote failed instead of a generic "couldn't create".
+   * Logs the full status + body for the server operator, returns a short message
+   * for the UI.
+   */
+  private marsErrorMessage(stage: string, err: unknown): string {
+    if (axios.isAxiosError(err)) {
+      const status = err.response?.status;
+      const data = err.response?.data;
+      const body =
+        typeof data === 'string' ? data : JSON.stringify(data ?? {});
+      this.logger.error(
+        `Tutor create — ${stage} failed (HTTP ${status ?? 'no-response'}): ${body.slice(0, 400)}`,
+      );
+      // Surface Mars's own message when it sends one.
+      const marsMsg =
+        (data as Record<string, unknown> | undefined)?.['message'] ??
+        (data as Record<string, unknown> | undefined)?.['detail'];
+      if (typeof marsMsg === 'string' && marsMsg.trim()) {
+        return `Mars: ${marsMsg}`;
+      }
+      if (status === 401 || status === 403) {
+        return 'Mars sessiyasi yaroqsiz — admin tokenni yangilang.';
+      }
+      if (status === 409 || status === 400) {
+        // Most commonly a duplicate phone.
+        return 'Bu telefon raqam allaqachon roʻyxatdan oʻtgan boʻlishi mumkin.';
+      }
+      return `Mars xatosi (HTTP ${status ?? '—'})`;
+    }
+    this.logger.error(`Tutor create — ${stage} failed: ${(err as Error).message}`);
+    return 'Akkaunt yaratib boʻlmadi';
+  }
+
+  /**
    * Create a brand-new Mars account for a new hire and promote it to tutor.
    *
    * Two steps:
    *  1. POST /api/v2/users/create — Mars requires first_name, last_name, phone,
-   *     branch_id, department (int) and schedule ('full-time' | 'part-time').
+   *     branch_id, department (int) and schedule ('full-time' | 'part-time'). We
+   *     also send is_tutor/is_teacher/grade up front (matching the verified Mars
+   *     payload) so the account is correctly typed even if step 2 is skipped.
    *     Password is optional and forwarded only when provided.
    *  2. PATCH /api/v1/users/tutors/{id}?status=1 (via {@link addTutor}) to flip
-   *     the new user into the tutor role.
+   *     the new user into the tutor role — a safety net that also (re)confirms the
+   *     tutor flag in Mars's own tutor table.
    *
    * The schedule (weekly slots) is set afterwards by the client through the
    * existing {@link updateTutorSlots} flow, so it's not part of creation.
+   *
+   * Failures at either step are caught and reported with Mars's actual reason
+   * (logged in full server-side) instead of bubbling up as a generic 500.
    */
   async createTutorAccount(
     dto: CreateTutorAccountDto,
@@ -669,13 +711,23 @@ export class TutorsService {
       branch_id: dto.branchId,
       department,
       schedule,
+      // Type the account as a tutor from the start (verified Mars payload).
+      is_tutor: true,
+      is_teacher: false,
+      grade: 'junior',
     };
     if (dto.password) body.password = dto.password;
 
-    const created = await this.mars.authedPost<Record<string, unknown>>(
-      '/api/v2/users/create',
-      body,
-    );
+    // ── step 1: create the Mars account ──
+    let created: Record<string, unknown>;
+    try {
+      created = await this.mars.authedPost<Record<string, unknown>>(
+        '/api/v2/users/create',
+        body,
+      );
+    } catch (err) {
+      return { ok: false, message: this.marsErrorMessage('create', err) };
+    }
 
     // The new user id may surface under a few keys depending on Mars's response.
     const idVal =
@@ -694,8 +746,23 @@ export class TutorsService {
       };
     }
 
-    // Promote to tutor.
-    await this.addTutor(userId);
+    // ── step 2: confirm the tutor role (safety net) ──
+    try {
+      await this.addTutor(userId);
+    } catch (err) {
+      // The account exists; only the explicit role flip failed. Report honestly
+      // but still hand back the id so the operator can recover from the UI.
+      const message = this.marsErrorMessage('promote', err);
+      this.invalidateCache();
+      return {
+        ok: false,
+        message: `Akkaunt yaratildi (ID ${userId}), lekin tutor rolini berishda xato — ${message}`,
+        userId,
+        name: `${dto.firstName.trim()} ${dto.lastName.trim()}`.trim(),
+        branchId: dto.branchId,
+      };
+    }
+
     this.invalidateCache();
 
     return {

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, CalendarCheck, Check, X, Minus, Snowflake } from 'lucide-react'
+import { ArrowLeft, CalendarCheck, Check, X, Minus, Snowflake, Clock, MapPin, BookOpen, Calendar, User } from 'lucide-react'
 import { useGroupAttendance, useMarkAttendance } from '../hooks/useQueries'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
@@ -81,6 +81,10 @@ export default function GroupAttendancePage() {
   const markMut = useMarkAttendance()
   const [editing, setEditing] = useState<EditingCell | null>(null)
 
+  // Kelajakdagi dars kunlarini ko'rsatma — faqat bugun va o'tgan kunlar
+  const today = new Date().toISOString().slice(0, 10)
+  const visibleDays = data ? data.days.filter((d) => d.date <= today) : []
+
   const openEditor = (
     e: React.MouseEvent,
     studentId: number,
@@ -139,6 +143,47 @@ export default function GroupAttendancePage() {
                   {data.mentorName} · {data.branch}
                 </p>
               )}
+              {/* Kurator (faqat bo'lsa) */}
+              {data?.curatorName && (
+                <p className="flex items-center gap-1.5 text-xs text-amber-400/80 mt-1">
+                  <User size={11} className="flex-shrink-0" />
+                  {t('attendance.curator')}: {data.curatorName}
+                </p>
+              )}
+              {/* Chips qatori: yo'nalish, vaqt, xona, kunlar */}
+              {data && (
+                <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                  {data.courseName && (
+                    <span className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                      <BookOpen size={10} />
+                      {data.courseName}
+                    </span>
+                  )}
+                  {data.lessonStartTime && (
+                    <span className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-lg bg-sky-500/10 text-sky-300 border border-sky-500/20">
+                      <Clock size={10} />
+                      {data.lessonStartTime}
+                      {data.lessonEndTime && `–${data.lessonEndTime}`}
+                    </span>
+                  )}
+                  {data.roomName && (
+                    <span className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                      <MapPin size={10} />
+                      {data.roomName}
+                    </span>
+                  )}
+                  {data.lessonDays != null && (
+                    <span className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-lg bg-violet-500/10 text-violet-300 border border-violet-500/20">
+                      <Calendar size={10} />
+                      {data.lessonDays === 2
+                        ? t('attendance.lessonDaysEven')
+                        : data.lessonDays === 1
+                          ? t('attendance.lessonDaysOdd')
+                          : t('attendance.lessonDaysCount', { count: data.lessonDays })}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           {data && (
@@ -175,7 +220,7 @@ export default function GroupAttendancePage() {
                     <th className="sticky left-0 z-10 bg-[#161b27] text-left text-[11px] uppercase tracking-wider text-slate-600 font-semibold px-2 pb-3 w-[200px]">
                       {t('attendance.studentList')}
                     </th>
-                    {data.days.map((d) => (
+                    {visibleDays.map((d) => (
                       <th key={d.date} className="px-0 pb-3 align-bottom">
                         <div
                           className={`flex flex-col items-center gap-0.5 rounded-lg py-1 ${
@@ -210,16 +255,19 @@ export default function GroupAttendancePage() {
                             {idx + 1}
                           </span>
                           <span className="text-slate-200 text-sm truncate">{s.name}</span>
+                          {s.isIntern && (
+                            <span title="Intern" className="flex-shrink-0 text-xs leading-none">⭐</span>
+                          )}
                           {s.frozen && (
                             <Snowflake size={12} className="text-sky-400 flex-shrink-0" />
                           )}
                         </div>
                       </td>
-                      {s.cells.map((c, ci) => (
+                      {s.cells.filter((c) => c.date <= today).map((c, ci) => (
                         <td
                           key={c.date}
                           className={`px-0 py-0.5 ${
-                            data.days[ci]?.isVioletDay ? 'bg-violet-500/[0.05]' : ''
+                            visibleDays[ci]?.isVioletDay ? 'bg-violet-500/[0.05]' : ''
                           }`}
                         >
                           <div className="flex justify-center">

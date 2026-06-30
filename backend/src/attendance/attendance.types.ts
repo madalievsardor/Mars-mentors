@@ -38,6 +38,8 @@ export interface AttendanceStudentRow {
   statusType: number; // 5 = active, 4 = frozen
   frozen: boolean;
   cells: AttendanceCell[];
+  /** True when this student is a registered intern in the int-server. */
+  isIntern?: boolean;
 }
 
 /** Full normalized grid for one group (drill-down view, mirrors core). */
@@ -53,6 +55,18 @@ export interface GroupAttendance {
   students: AttendanceStudentRow[];
   suspectVioletCount: number;
   unmarkedCount: number;
+  /** Dars xonasi nomi (GET /groups/{id} dan) */
+  roomName: string | null;
+  /** Kurator ismi (GET /groups/{id} dan, ba'zi guruhlarda null) */
+  curatorName: string | null;
+  /** Yo'nalish / kurs nomi */
+  courseName: string | null;
+  /** Dars boshlanish vaqti ("HH:MM" formati) */
+  lessonStartTime: string | null;
+  /** Dars tugash vaqti ("HH:MM" formati) */
+  lessonEndTime: string | null;
+  /** Haftada necha kun: 1=toq, 2=juft, boshqa = sonli */
+  lessonDays: number | null;
 }
 
 /** Per-group issue summary used on the overview page. */

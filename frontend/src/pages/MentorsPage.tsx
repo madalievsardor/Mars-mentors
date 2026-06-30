@@ -5,7 +5,6 @@ import { Search, SlidersHorizontal, TrendingDown, TrendingUp, Users, Minus, Grad
 import { useMentors, useInterns } from '../hooks/useQueries'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
-import MentorModal from '../components/MentorModal'
 import { normalizeName, resolveName } from '../utils/grade'
 import type { Mentor, MentorGrade } from '../types'
 
@@ -192,8 +191,6 @@ export default function MentorsPage() {
   const navigate = useNavigate()
   const { data: mentors, isLoading, isError, error, refetch } = useMentors()
   const { data: internsSummary } = useInterns()
-  const [selectedMentor, setSelectedMentor] = useState<Mentor | null>(null)
-
   // Resolve each Mars mentor (by normalized name) to an int-server intern count.
   // Mars mentor IDs differ from int-server IDs, so we bridge the two systems by
   // name via the shared resolver (EXACT → MANUAL → FUZZY ≤ 3).
@@ -373,7 +370,7 @@ export default function MentorsPage() {
                       key={mentor.id}
                       mentor={mentor}
                       internCount={internCount}
-                      onClick={() => setSelectedMentor(mentor)}
+                      onClick={() => navigate(`/mentors/${mentor.id}`)}
                       onOpenInterns={() => navigate('/interns', { state: { search: mentor.name } })}
                     />
                   )
@@ -404,9 +401,6 @@ export default function MentorsPage() {
         </div>
       )}
 
-      {selectedMentor && (
-        <MentorModal mentor={selectedMentor} onClose={() => setSelectedMentor(null)} />
-      )}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MarsService } from '../mars/mars.service';
 import { MarsGroup } from '../mars/mars.types';
+import { InternsService } from '../interns/interns.service';
 import {
   AttendanceCell,
   AttendanceDay,
@@ -66,7 +67,25 @@ export class AttendanceService {
   // Max concurrent Mars attendance calls during an overview scan.
   private readonly SCAN_CONCURRENCY = 8;
 
-  constructor(private readonly marsService: MarsService) {}
+  /**
+   * Normalize a display name for intern–student matching.
+   * Collapses internal whitespace and standardises apostrophe variants that
+   * are common in Uzbek names (o'zbek, g'ulom, …) so names stored with
+   * different Unicode code-points still compare equal.
+   */
+  private normalizeName(raw: string): string {
+    return raw
+      .normalize('NFC')
+      .toLowerCase()
+      .replace(/[''ʼʻ`]/g, "'") // unify apostrophe variants (U+2018, U+2019, U+02BC, U+02BB, backtick → plain apostrophe)
+      .replace(/\s+/g, ' ')      // collapse multiple spaces
+      .trim();
+  }
+
+  constructor(
+    private readonly marsService: MarsService,
+    private readonly internsService: InternsService,
+  ) {}
 
   // ──────────── window helpers ────────────
 
@@ -104,34 +123,88 @@ export class AttendanceService {
   /** Normalized attendance grid for one group (drill-down view). */
   async getGroupAttendance(groupId: number): Promise<GroupAttendance> {
     const { from, till } = this.monthWindow();
-    const raw = (await this.marsService.getGroupAttendanceRaw(
-      groupId,
-      from,
-      till,
-    )) as RawAttendance;
 
-    // Enrich with group/mentor/branch metadata from the active-groups list.
-    let meta: MarsGroup | undefined;
-    try {
-      const groups = await this.marsService.getAllActiveGroups();
-      meta = groups.find((g) => g.id === groupId);
-    } catch {
-      meta = undefined;
-    }
+    // Fetch attendance data and group detail in parallel for efficiency.
+    // getGroupDetail returns null on error — we degrade gracefully.
+    const [raw, detail] = await Promise.all([
+      this.marsService
+        .getGroupAttendanceRaw(groupId, from, till)
+        .then((r) => r as RawAttendance),
+      this.marsService.getGroupDetail(groupId),
+    ]);
 
     const grid = this.normalize(raw);
+
+    // Derive curator full name (null when curator field is absent/null).
+    const curatorName = detail?.curator
+      ? `${detail.curator.first_name} ${detail.curator.last_name}`.trim() ||
+        null
+      : null;
+
+    // course (single-group endpoint) takes priority over category (list endpoint).
+    const courseName =
+      detail?.course?.name ?? detail?.category?.name ?? null;
+
+    // Trim to "HH:MM" — the API returns "HH:MM:SS".
+    const lessonStartTime = detail?.lesson_start_time
+      ? detail.lesson_start_time.slice(0, 5)
+      : null;
+    const lessonEndTime = detail?.lesson_end_time
+      ? detail.lesson_end_time.slice(0, 5)
+      : null;
+
+    // Decorate each student row with isIntern flag.
+    // Matching is done by normalized name since int-server uses MongoDB _id
+    // while Mars uses integer student_id — no shared key exists between the two.
+    const internNames = await this.resolveInternNames();
+    const students = grid.students.map((s) => ({
+      ...s,
+      isIntern: internNames.has(this.normalizeName(s.name)),
+    }));
+
     return {
       groupId,
-      groupName: meta?.name ?? `#${groupId}`,
-      mentorId: meta?.user?.id ?? 0,
-      mentorName: meta
-        ? `${meta.user.first_name} ${meta.user.last_name}`.trim()
+      groupName: detail?.name ?? `#${groupId}`,
+      mentorId: detail?.user?.id ?? 0,
+      mentorName: detail
+        ? `${detail.user.first_name} ${detail.user.last_name}`.trim()
         : '',
-      branch: meta?.branch?.title ?? '',
+      branch: detail?.branch?.title ?? '',
       windowFrom: from,
       windowTill: till,
+      roomName: detail?.room?.name ?? null,
+      curatorName,
+      courseName,
+      lessonStartTime,
+      lessonEndTime,
+      lessonDays: detail?.days ?? null,
       ...grid,
+      students,
     };
+  }
+
+  /**
+   * Collect a lowercase name set of all known interns from the cached int-server
+   * summary.  Returns an empty set when int-server is unavailable so the rest of
+   * the attendance page degrades gracefully (all isIntern = false).
+   */
+  private async resolveInternNames(): Promise<Set<string>> {
+    try {
+      const summary = await this.internsService.getSummary();
+      if (!summary.available) return new Set();
+      const names = new Set<string>();
+      for (const mentor of summary.mentors) {
+        for (const intern of mentor.interns) {
+          if (intern.name) {
+            const normalized = this.normalizeName(intern.name);
+            if (normalized) names.add(normalized);
+          }
+        }
+      }
+      return names;
+    } catch {
+      return new Set();
+    }
   }
 
   /**

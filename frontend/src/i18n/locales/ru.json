@@ -140,12 +140,12 @@
   },
   "interns": {
     "title": "Интерны",
-    "subtitle": "Сколько интернов у каждого ментора (int-server)",
+    "subtitle": "Все интерны — плоский список (int-server)",
     "totalInterns": "Всего интернов",
     "totalMentors": "Всего менторов",
     "withInterns": "Менторы с интернами",
     "unassigned": "Без ментора",
-    "searchPlaceholder": "Поиск ментора...",
+    "searchPlaceholder": "Поиск интерна или ментора...",
     "mentorCount": "{{count}} менторов",
     "internCount": "{{count}} интернов",
     "interns": "интерн",
@@ -157,7 +157,7 @@
     "loadError": "Ошибка загрузки интернов (int-server не отвечает)",
     "waking": "Сервер просыпается...",
     "wakingHint": "Сервер интернов был в спящем режиме; данные загрузятся автоматически через несколько секунд.",
-    "noResults": "Ментор не найден",
+    "noResults": "Интерны не найдены",
     "noData": "Пока нет данных об интернах",
     "showInterns": "Показать интернов",
     "hideInterns": "Скрыть",
@@ -222,6 +222,7 @@
     "close": "Закрыть",
     "groupCount": "Количество групп",
     "studentCount": "Количество учеников",
+    "internCount": "Интернов",
     "groupList": "Список групп",
     "noGroups": "Группы отсутствуют",
     "trend": "Тенденция за 30 дней",
@@ -382,6 +383,13 @@
     "howItWorks": "Как определяется фиолетовый?",
     "editCell": "Изменить",
     "markPresent": "Присутствовал",
-    "markAbsent": "Отсутствовал"
+    "markAbsent": "Отсутствовал",
+    "curator": "Куратор",
+    "course": "Направление",
+    "room": "Кабинет",
+    "lessonTime": "Время занятий",
+    "lessonDaysEven": "Чётные дни",
+    "lessonDaysOdd": "Нечётные дни",
+    "lessonDaysCount": "{{count}} дн/нед"
   }
 }

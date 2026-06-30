@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import {
   Users,
   Search,
@@ -47,7 +48,7 @@ import type {
 } from '../types'
 
 // Du..Ya order — matches the backend's 7-entry grid.
-const WEEKDAYS: Weekday[] = [
+export const WEEKDAYS: Weekday[] = [
   'monday',
   'tuesday',
   'wednesday',
@@ -60,7 +61,7 @@ const WEEKDAYS: Weekday[] = [
 type SortKey = 'name' | 'rating'
 
 // Half-hour start times 06:00..23:30 for the schedule time pickers.
-const HOUR_OPTIONS: string[] = (() => {
+export const HOUR_OPTIONS: string[] = (() => {
   const out: string[] = []
   for (let h = 6; h <= 23; h++) {
     for (const m of [0, 30]) {
@@ -71,7 +72,7 @@ const HOUR_OPTIONS: string[] = (() => {
   return out
 })()
 
-function Modal({
+export function Modal({
   title,
   icon: Icon,
   onClose,
@@ -115,7 +116,7 @@ function Modal({
  * those differ, plus one POST /tutors/:id/slots per weekday whose interval was
  * edited. Untouched fields/days are never sent, keeping the write idempotent.
  */
-function TutorEditModal({
+export function TutorEditModal({
   tutor,
   initialDays,
   onClose,
@@ -458,7 +459,7 @@ function TutorEditModal({
   )
 }
 
-function RemoveTutorModal({
+export function RemoveTutorModal({
   tutor,
   onClose,
 }: {
@@ -518,7 +519,7 @@ function RemoveTutorModal({
  * account for good. To guard against accidents the operator must type the
  * tutor's exact name before the destructive button enables.
  */
-function DeleteTutorModal({
+export function DeleteTutorModal({
   tutor,
   onClose,
 }: {
@@ -616,6 +617,8 @@ function CreateTutorModal({
   const mutation = useCreateTutorAccount()
 
   const [step, setStep] = useState<'form' | 'confirm'>('form')
+  // Backend may return { ok:false, message } without throwing — surface it.
+  const [resultError, setResultError] = useState<string | null>(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('+998')
@@ -635,6 +638,7 @@ function CreateTutorModal({
 
   const handleCreate = () => {
     if (!formValid || branchId == null) return
+    setResultError(null)
     mutation.mutate(
       {
         firstName: firstName.trim(),
@@ -645,8 +649,15 @@ function CreateTutorModal({
         schedule,
       },
       {
+        onError: () => {
+          setResultError(t('tutors.create.createError'))
+        },
         onSuccess: (res) => {
-          if (!res.ok || !res.userId) return
+          if (!res.ok || !res.userId) {
+            // Mars rejected the create/promote — show its actual reason.
+            setResultError(res.message ?? t('tutors.create.createError'))
+            return
+          }
           // Hand a synthetic TutorBrief to the schedule editor.
           onCreated({
             id: res.userId,
@@ -842,9 +853,9 @@ function CreateTutorModal({
             </p>
           </div>
 
-          {mutation.isError && (
+          {(resultError || mutation.isError) && (
             <p className="text-rose-400 text-xs mt-3">
-              {t('tutors.create.createError')}
+              {resultError ?? t('tutors.create.createError')}
             </p>
           )}
 
@@ -877,7 +888,7 @@ function CreateTutorModal({
   )
 }
 
-function Stars({ value }: { value: number }) {
+export function Stars({ value }: { value: number }) {
   // Render 5 stars, filling proportionally to the 0..5 rating.
   return (
     <span className="flex items-center gap-0.5">
@@ -968,7 +979,7 @@ function TutorCard({
   )
 }
 
-function StatTile({
+export function StatTile({
   icon: Icon,
   label,
   value,
@@ -994,6 +1005,74 @@ function StatTile({
       </div>
       <p className={`text-lg font-bold tabular-nums ${toneCls[tone]}`}>{value}</p>
     </div>
+  )
+}
+
+function TutorTableRow({
+  index,
+  tutor,
+}: {
+  index: number
+  tutor: TutorBrief
+}) {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const { data: slots } = useTutorSlots(tutor.id)
+  const slotsReady = slots?.available
+  const hasRating = tutor.avgRating != null && tutor.totalRatings > 0
+
+  return (
+    <tr
+      onClick={() => navigate(`/tutors/${tutor.id}`)}
+      className="border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.03] cursor-pointer transition-colors group"
+    >
+      <td className="px-4 py-3 text-slate-600 text-xs tabular-nums text-right w-10">
+        {index}
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-indigo-500/15 text-indigo-200 flex items-center justify-center text-sm font-bold flex-shrink-0">
+            {tutor.name.charAt(0).toUpperCase()}
+          </div>
+          <span className="text-sm font-semibold text-slate-100 group-hover:text-indigo-300 transition-colors">
+            {tutor.name}
+          </span>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-sm text-slate-400">
+        <div className="flex items-center gap-1.5">
+          <Building2 size={12} className="text-slate-600 flex-shrink-0" />
+          {tutor.branch || '—'}
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        {hasRating ? (
+          <div className="flex items-center gap-1.5">
+            <Stars value={tutor.avgRating!} />
+            <span className="text-xs font-semibold text-amber-300 tabular-nums">
+              {tutor.avgRating!.toFixed(1)}
+            </span>
+          </div>
+        ) : (
+          <span className="text-slate-600 text-xs">—</span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-sm tabular-nums text-slate-300">
+        {slotsReady ? (
+          `${slots!.workingDays} ${t('tutors.workingDays').toLowerCase()}`
+        ) : (
+          <span className="text-slate-600">—</span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-sm tabular-nums text-slate-300">
+        {slotsReady ? (
+          `${slots!.totalHours} ${t('tutors.hoursShort')}`
+        ) : (
+          <span className="text-slate-600">—</span>
+        )}
+      </td>
+      <td className="px-4 py-3 text-slate-600 text-sm">—</td>
+    </tr>
   )
 }
 
@@ -1225,7 +1304,6 @@ export default function TutorsPage() {
   const [query, setQuery] = useState('')
   const [branchFilter, setBranchFilter] = useState<string>('all')
   const [sortKey, setSortKey] = useState<SortKey>('name')
-  const [selectedId, setSelectedId] = useState<number | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   // After a new account is created we open the schedule editor for that tutor.
@@ -1251,11 +1329,6 @@ export default function TutorsPage() {
     }
     return rows
   }, [data, query, branchFilter, sortKey])
-
-  const selectedTutor = useMemo(
-    () => data?.tutors.find((tu) => tu.id === selectedId) ?? null,
-    [data, selectedId],
-  )
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -1392,10 +1465,25 @@ export default function TutorsPage() {
           </div>
 
           {filtered.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
-              {filtered.map((tu) => (
-                <TutorCard key={tu.id} tutor={tu} onSelect={setSelectedId} />
-              ))}
+            <div className="bg-[#161b27] border border-white/[0.06] rounded-2xl overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-white/[0.06] bg-white/[0.02]">
+                    <th className="px-4 py-3 text-right text-[11px] uppercase tracking-wider font-semibold text-slate-600 w-10">#</th>
+                    <th className="px-4 py-3 text-left text-[11px] uppercase tracking-wider font-semibold text-slate-600">{t('tutors.sortName')}</th>
+                    <th className="px-4 py-3 text-left text-[11px] uppercase tracking-wider font-semibold text-slate-600">{t('tutors.edit.branch')}</th>
+                    <th className="px-4 py-3 text-left text-[11px] uppercase tracking-wider font-semibold text-slate-600">{t('tutors.sortRating')}</th>
+                    <th className="px-4 py-3 text-left text-[11px] uppercase tracking-wider font-semibold text-slate-600">{t('tutors.workingDays')}</th>
+                    <th className="px-4 py-3 text-left text-[11px] uppercase tracking-wider font-semibold text-slate-600">{t('tutors.weeklyHours')}</th>
+                    <th className="px-4 py-3 text-left text-[11px] uppercase tracking-wider font-semibold text-slate-600">Bookinglar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((tu, i) => (
+                    <TutorTableRow key={tu.id} index={i + 1} tutor={tu} />
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : (
             <div className="bg-[#161b27] border border-white/[0.06] rounded-2xl flex flex-col items-center py-16 gap-2">
@@ -1406,13 +1494,6 @@ export default function TutorsPage() {
         </>
       )}
 
-      {/* Selected tutor detail modal */}
-      {selectedTutor && (
-        <TutorDetailModal
-          tutor={selectedTutor}
-          onClose={() => setSelectedId(null)}
-        />
-      )}
     </div>
   )
 }

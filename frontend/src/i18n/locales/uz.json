@@ -140,12 +140,12 @@
   },
   "interns": {
     "title": "Internlar",
-    "subtitle": "Har bir mentorda nechta intern borligi (int-server)",
+    "subtitle": "Barcha internlar — tekis ro'yxat (int-server)",
     "totalInterns": "Jami internlar",
     "totalMentors": "Jami mentorlar",
     "withInterns": "Internli mentorlar",
     "unassigned": "Biriktirilmagan",
-    "searchPlaceholder": "Mentor qidirish...",
+    "searchPlaceholder": "Intern yoki mentor qidirish...",
     "mentorCount": "{{count}} ta mentor",
     "internCount": "{{count}} ta intern",
     "interns": "intern",
@@ -157,7 +157,7 @@
     "loadError": "Internlarni yuklashda xatolik (int-server javob bermayapti)",
     "waking": "Server uyg'onmoqda...",
     "wakingHint": "Intern serveri uyqudan turyapti, ma'lumot bir necha soniyada o'zi yuklanadi.",
-    "noResults": "Mentor topilmadi",
+    "noResults": "Intern topilmadi",
     "noData": "Hozircha intern ma'lumoti yo'q",
     "showInterns": "Internlarni ko'rsatish",
     "hideInterns": "Yashirish",
@@ -222,6 +222,7 @@
     "close": "Yopish",
     "groupCount": "Guruhlar soni",
     "studentCount": "O'quvchilar soni",
+    "internCount": "Internlar soni",
     "groupList": "Guruhlar ro'yxati",
     "noGroups": "Guruhlar mavjud emas",
     "trend": "So'nggi 30 kun tendensiyasi",
@@ -382,6 +383,13 @@
     "howItWorks": "Siyohrang qanday aniqlanadi?",
     "editCell": "Davomatni o'zgartirish",
     "markPresent": "Bor",
-    "markAbsent": "Yo'q"
+    "markAbsent": "Yo'q",
+    "curator": "Kurator",
+    "course": "Yo'nalish",
+    "room": "Xona",
+    "lessonTime": "Dars vaqti",
+    "lessonDaysEven": "Juft kunlar",
+    "lessonDaysOdd": "Toq kunlar",
+    "lessonDaysCount": "Haftada {{count}} kun"
   }
 }
