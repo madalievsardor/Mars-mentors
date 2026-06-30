@@ -25,6 +25,7 @@ import {
 import {
   useTutors,
   useTutorSlots,
+  useTutorBookings,
   useRemoveTutor,
   useDeleteTutor,
   useBranches,
@@ -949,6 +950,7 @@ function TutorTableRow({
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { data: slots } = useTutorSlots(tutor.id)
+  const { data: bookings } = useTutorBookings(tutor.id)
   const slotsReady = slots?.available
   const hasRating = tutor.avgRating != null && tutor.totalRatings > 0
 
@@ -1002,7 +1004,15 @@ function TutorTableRow({
           <span className="text-slate-600">—</span>
         )}
       </td>
-      <td className="px-4 py-3 text-slate-600 text-sm">—</td>
+      <td className="px-4 py-3 text-sm tabular-nums">
+        {bookings != null ? (
+          <span className={bookings.total > 0 ? 'text-indigo-300 font-semibold' : 'text-slate-600'}>
+            {bookings.total > 0 ? bookings.total : '—'}
+          </span>
+        ) : (
+          <span className="text-slate-700">...</span>
+        )}
+      </td>
     </tr>
   )
 }
