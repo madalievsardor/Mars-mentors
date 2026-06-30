@@ -26,9 +26,11 @@ import {
   getGroupAttendance,
   markAttendance,
   getTutorBookings,
+  getApiLogs,
 } from '../api/client';
 import type {
   NotificationSetting,
+  LogCategory,
   UpdateTutorSlotsPayload,
   UpdateTutorNamePayload,
   UpdateTutorProfilePayload,
@@ -54,6 +56,7 @@ export const QUERY_KEYS = {
   attendanceOverview: ['attendance', 'overview'] as const,
   groupAttendance: (id: number) => ['attendance', 'group', id] as const,
   tutorBookings: (id: number) => ['tutors', id, 'bookings'] as const,
+  logs: (category?: LogCategory) => ['logs', category ?? 'all'] as const,
 };
 
 export const useInterns = () =>
@@ -388,4 +391,12 @@ export const useTutorBookings = (id: number | null) =>
     queryFn: () => getTutorBookings(id!),
     enabled: id !== null,
     staleTime: 5 * 60 * 1000,
+  });
+
+export const useApiLogs = (category?: LogCategory) =>
+  useQuery({
+    queryKey: QUERY_KEYS.logs(category),
+    queryFn: () => getApiLogs(category),
+    refetchInterval: 10_000,
+    staleTime: 0,
   });

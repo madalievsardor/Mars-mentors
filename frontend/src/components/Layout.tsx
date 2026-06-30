@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, Users, GraduationCap, Bell, BookUser, CalendarCheck, LogOut, ChevronDown } from 'lucide-react'
+import { LayoutDashboard, Users, GraduationCap, Bell, BookUser, CalendarCheck, LogOut, ChevronDown, Activity } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -33,6 +33,7 @@ function SidebarContent({
     { to: '/attendance', label: t('nav.attendance'), icon: CalendarCheck },
     { to: '/tutors', label: t('nav.tutors'), icon: BookUser },
     { to: '/notifications', label: t('nav.notifications'), icon: Bell },
+    { to: '/logs', label: t('nav.logs'), icon: Activity },
   ]
 
   return (

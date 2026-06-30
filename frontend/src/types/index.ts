@@ -408,7 +408,22 @@ export interface CreateTutorAccountResult {
   branchId?: number;
 }
 
-// ──────────── Tutor bookings ────────────
+// ──────────── Tutor bookings & API logs ────────────
+
+// ──────────── API logs ────────────
+
+export type LogCategory = 'mentor' | 'admin' | 'tutor' | 'auth';
+
+export interface ApiLogEntry {
+  id: number;
+  ts: string;
+  method: string;
+  path: string;
+  status: number | null;
+  durationMs: number;
+  category: LogCategory;
+  error?: string;
+}
 
 export interface BookingEntry {
   id: number;

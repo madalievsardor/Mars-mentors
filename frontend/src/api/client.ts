@@ -26,6 +26,8 @@ import type {
   AttendanceMarkPayload,
   AttendanceMarkResult,
   TutorBookingStats,
+  ApiLogEntry,
+  LogCategory,
 } from '../types';
 
 const api = axios.create({
@@ -118,6 +120,13 @@ export const getTutorSlots = async (id: number): Promise<TutorSlotsResponse> => 
 
 export const getTutorBookings = async (id: number): Promise<TutorBookingStats> => {
   const { data } = await api.get<TutorBookingStats>(`/tutors/${id}/bookings`);
+  return data;
+};
+
+export const getApiLogs = async (category?: LogCategory): Promise<ApiLogEntry[]> => {
+  const { data } = await api.get<ApiLogEntry[]>('/logs', {
+    params: category ? { category } : undefined,
+  });
   return data;
 };
 

@@ -111,7 +111,7 @@ export default function TutorDetailPage() {
             <div className="flex items-center gap-4 mt-1.5 flex-wrap text-slate-500 text-sm">
               <span className="flex items-center gap-1.5">
                 <Building2 size={14} />
-                {tutor.branch || 'вЂ”'}
+                {tutor.branch || 'вЂ"'}
               </span>
               {hasRating && (
                 <span className="flex items-center gap-1.5 text-amber-300">
@@ -189,7 +189,7 @@ export default function TutorDetailPage() {
         <StatTile
           icon={CalendarCheck}
           label={t('tutors.workingDays')}
-          value={slotsData?.available ? String(slotsData.workingDays) : 'вЂ”'}
+          value={slotsData?.available ? String(slotsData.workingDays) : 'вЂ"'}
           tone="indigo"
         />
         <StatTile
@@ -198,7 +198,7 @@ export default function TutorDetailPage() {
           value={
             slotsData?.available
               ? `${slotsData.totalHours} ${t('tutors.hoursShort')}`
-              : 'вЂ”'
+              : 'вЂ"'
           }
           tone="emerald"
         />
@@ -208,7 +208,7 @@ export default function TutorDetailPage() {
           value={
             tutor.understandablePercent != null
               ? `${Math.round(tutor.understandablePercent)}%`
-              : 'вЂ”'
+              : 'вЂ"'
           }
           tone="sky"
         />
@@ -218,7 +218,7 @@ export default function TutorDetailPage() {
           value={
             tutor.interestingPercent != null
               ? `${Math.round(tutor.interestingPercent)}%`
-              : 'вЂ”'
+              : 'вЂ"'
           }
           tone="amber"
         />
@@ -282,7 +282,7 @@ export default function TutorDetailPage() {
                           className="inline-flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/25 rounded-lg px-2 py-0.5 text-xs font-semibold text-emerald-200 tabular-nums"
                         >
                           <Clock size={10} className="text-emerald-400" />
-                          {r.from}вЂ“{r.to}
+                          {r.from}вЂ"{r.to}
                         </span>
                       ))}
                     </div>
@@ -300,36 +300,36 @@ export default function TutorDetailPage() {
       </div>
 
       {/* Booking stats */}
-      <div className=”bg-[#161b27] border border-white/[0.08] rounded-2xl p-5”>
-        <div className=”flex items-center justify-between mb-4”>
-          <div className=”flex items-center gap-2 text-slate-500 text-xs uppercase tracking-wider font-semibold”>
+      <div className="bg-[#161b27] border border-white/[0.08] rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2 text-slate-500 text-xs uppercase tracking-wider font-semibold">
             <BarChart3 size={13} />
             Booking statistikasi
           </div>
           {bookingStats && bookingStats.total > 0 && (
-            <span className=”px-2.5 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/25 text-indigo-300 text-xs font-semibold tabular-nums”>
+            <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/25 text-indigo-300 text-xs font-semibold tabular-nums">
               {bookingStats.total} ta jami
             </span>
           )}
         </div>
 
         {bookingsLoading && (
-          <div className=”py-8”>
-            <LoadingSpinner message=”Bookinglar yuklanmoqda...” />
+          <div className="py-8">
+            <LoadingSpinner message="Bookinglar yuklanmoqda..." />
           </div>
         )}
 
         {!bookingsLoading && bookingStats && bookingStats.total === 0 && (
-          <div className=”flex flex-col items-center py-8 gap-2 text-slate-700”>
+          <div className="flex flex-col items-center py-8 gap-2 text-slate-700">
             <BarChart3 size={28} />
-            <p className=”text-sm text-slate-600”>Hozircha booking yo'q</p>
+            <p className="text-sm text-slate-600">Hozircha booking yo'q</p>
           </div>
         )}
 
         {!bookingsLoading && bookingStats && bookingStats.total > 0 && (
-          <div className=”space-y-4”>
+          <div className="space-y-4">
             {/* Status breakdown */}
-            <div className=”flex flex-wrap gap-2”>
+            <div className="flex flex-wrap gap-2">
               {Object.entries(bookingStats.byStatus).map(([status, count]) => {
                 const tone =
                   status === 'booked' ? 'emerald' :
@@ -353,14 +353,14 @@ export default function TutorDetailPage() {
             </div>
 
             {/* Recent bookings table */}
-            <div className=”overflow-hidden rounded-xl border border-white/[0.06]”>
-              <table className=”w-full text-sm”>
+            <div className="overflow-hidden rounded-xl border border-white/[0.06]">
+              <table className="w-full text-sm">
                 <thead>
-                  <tr className=”border-b border-white/[0.06]”>
-                    <th className=”text-left py-2.5 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider”>O'quvchi</th>
-                    <th className=”text-left py-2.5 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider”>Mavzu</th>
-                    <th className=”text-left py-2.5 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider”>Sana</th>
-                    <th className=”text-center py-2.5 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider”>Holat</th>
+                  <tr className="border-b border-white/[0.06]">
+                    <th className="text-left py-2.5 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">O'quvchi</th>
+                    <th className="text-left py-2.5 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Mavzu</th>
+                    <th className="text-left py-2.5 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Sana</th>
+                    <th className="text-center py-2.5 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Holat</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -380,11 +380,11 @@ export default function TutorDetailPage() {
                       ? b.dateTime
                       : `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')} ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
                     return (
-                      <tr key={b.id} className=”border-b border-white/[0.04] hover:bg-white/[0.02]”>
-                        <td className=”py-2.5 px-4 text-slate-200 font-medium”>{b.studentName}</td>
-                        <td className=”py-2.5 px-4 text-slate-400 max-w-[120px] truncate”>{b.topic || '—'}</td>
-                        <td className=”py-2.5 px-4 text-slate-500 tabular-nums text-xs”>{dateStr}</td>
-                        <td className=”py-2.5 px-4 text-center”>
+                      <tr key={b.id} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
+                        <td className="py-2.5 px-4 text-slate-200 font-medium">{b.studentName}</td>
+                        <td className="py-2.5 px-4 text-slate-400 max-w-[120px] truncate">{b.topic || '—'}</td>
+                        <td className="py-2.5 px-4 text-slate-500 tabular-nums text-xs">{dateStr}</td>
+                        <td className="py-2.5 px-4 text-center">
                           <span className={`inline-block px-2 py-0.5 rounded-lg text-xs font-semibold ${badge[tone]}`}>
                             {b.status}
                           </span>

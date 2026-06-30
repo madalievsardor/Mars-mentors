@@ -8,7 +8,8 @@
     "navigation": "Navigation",
     "account": "Mars account",
     "logout": "Logout",
-    "attendance": "Attendance"
+    "attendance": "Attendance",
+    "logs": "API Logs"
   },
   "login": {
     "title": "Mars IT Academy",

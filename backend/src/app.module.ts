@@ -14,6 +14,7 @@ import { InternsModule } from './interns/interns.module';
 import { TutorsModule } from './tutors/tutors.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { AuthModule } from './auth/auth.module';
+import { LogsModule } from './logs/logs.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 
 @Module({
@@ -23,6 +24,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
       envFilePath: '.env',
     }),
     ScheduleModule.forRoot(),
+    LogsModule,
     PrismaModule,
     MarsModule,
     TelegramModule,

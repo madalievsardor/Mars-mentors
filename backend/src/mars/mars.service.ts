@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
+import { LogsService } from '../logs/logs.service';
 import {
   MarsGroup,
   MarsGroupsResponse,
@@ -32,6 +33,7 @@ export class MarsService {
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly logsService: LogsService,
   ) {
     const baseUrl = this.configService.get<string>(
       'MARS_API_BASE_URL',
@@ -259,88 +261,118 @@ export class MarsService {
     path: string,
     params?: Record<string, string | number>,
   ): Promise<T> {
-    return this.requestWithRetry(async (headers) => {
-      // `path` carries its own `/api/vX` prefix, so call the host root rather than
-      // the v1 baseURL — strip baseURL by using an absolute URL.
-      const response = await this.httpClient.get<T>(path, {
-        headers,
-        params,
-        baseURL: this.marsHostBase(),
+    const t0 = Date.now();
+    try {
+      const result = await this.requestWithRetry(async (headers) => {
+        const response = await this.httpClient.get<T>(path, {
+          headers,
+          params,
+          baseURL: this.marsHostBase(),
+        });
+        return response.data;
       });
-      return response.data;
-    });
+      this.logsService.add({ method: 'GET', path, status: 200, durationMs: Date.now() - t0, category: LogsService.categorize(path) });
+      return result;
+    } catch (err) {
+      const status = axios.isAxiosError(err) ? (err.response?.status ?? null) : null;
+      this.logsService.add({ method: 'GET', path, status, durationMs: Date.now() - t0, category: LogsService.categorize(path), error: (err as Error).message });
+      throw err;
+    }
   }
 
-  /**
-   * Public authenticated POST helper. Same auth/refresh-retry contract as
-   * {@link authedGet}; `path` carries its own `/api/vX` prefix.
-   */
   async authedPost<T>(
     path: string,
     body?: unknown,
     params?: Record<string, string | number>,
   ): Promise<T> {
-    return this.requestWithRetry(async (headers) => {
-      const response = await this.httpClient.post<T>(path, body, {
-        headers,
-        params,
-        baseURL: this.marsHostBase(),
+    const t0 = Date.now();
+    try {
+      const result = await this.requestWithRetry(async (headers) => {
+        const response = await this.httpClient.post<T>(path, body, {
+          headers,
+          params,
+          baseURL: this.marsHostBase(),
+        });
+        return response.data;
       });
-      return response.data;
-    });
+      this.logsService.add({ method: 'POST', path, status: 200, durationMs: Date.now() - t0, category: LogsService.categorize(path) });
+      return result;
+    } catch (err) {
+      const status = axios.isAxiosError(err) ? (err.response?.status ?? null) : null;
+      this.logsService.add({ method: 'POST', path, status, durationMs: Date.now() - t0, category: LogsService.categorize(path), error: (err as Error).message });
+      throw err;
+    }
   }
 
-  /** Public authenticated PUT helper (see {@link authedPost}). */
   async authedPut<T>(
     path: string,
     body?: unknown,
     params?: Record<string, string | number>,
   ): Promise<T> {
-    return this.requestWithRetry(async (headers) => {
-      const response = await this.httpClient.put<T>(path, body, {
-        headers,
-        params,
-        baseURL: this.marsHostBase(),
+    const t0 = Date.now();
+    try {
+      const result = await this.requestWithRetry(async (headers) => {
+        const response = await this.httpClient.put<T>(path, body, {
+          headers,
+          params,
+          baseURL: this.marsHostBase(),
+        });
+        return response.data;
       });
-      return response.data;
-    });
+      this.logsService.add({ method: 'PUT', path, status: 200, durationMs: Date.now() - t0, category: LogsService.categorize(path) });
+      return result;
+    } catch (err) {
+      const status = axios.isAxiosError(err) ? (err.response?.status ?? null) : null;
+      this.logsService.add({ method: 'PUT', path, status, durationMs: Date.now() - t0, category: LogsService.categorize(path), error: (err as Error).message });
+      throw err;
+    }
   }
 
-  /** Public authenticated PATCH helper (see {@link authedPost}). */
   async authedPatch<T>(
     path: string,
     body?: unknown,
     params?: Record<string, string | number>,
   ): Promise<T> {
-    return this.requestWithRetry(async (headers) => {
-      const response = await this.httpClient.patch<T>(path, body, {
-        headers,
-        params,
-        baseURL: this.marsHostBase(),
+    const t0 = Date.now();
+    try {
+      const result = await this.requestWithRetry(async (headers) => {
+        const response = await this.httpClient.patch<T>(path, body, {
+          headers,
+          params,
+          baseURL: this.marsHostBase(),
+        });
+        return response.data;
       });
-      return response.data;
-    });
+      this.logsService.add({ method: 'PATCH', path, status: 200, durationMs: Date.now() - t0, category: LogsService.categorize(path) });
+      return result;
+    } catch (err) {
+      const status = axios.isAxiosError(err) ? (err.response?.status ?? null) : null;
+      this.logsService.add({ method: 'PATCH', path, status, durationMs: Date.now() - t0, category: LogsService.categorize(path), error: (err as Error).message });
+      throw err;
+    }
   }
 
-  /**
-   * Public authenticated DELETE helper (see {@link authedPost}). Same
-   * auth/refresh-retry contract; `path` carries its own `/api/vX` prefix.
-   *
-   * ⚠️ DESTRUCTIVE — used for permanently removing a Mars user
-   * (DELETE /api/v2/users/{id}). The operation cannot be undone.
-   */
   async authedDelete<T>(
     path: string,
     params?: Record<string, string | number>,
   ): Promise<T> {
-    return this.requestWithRetry(async (headers) => {
-      const response = await this.httpClient.delete<T>(path, {
-        headers,
-        params,
-        baseURL: this.marsHostBase(),
+    const t0 = Date.now();
+    try {
+      const result = await this.requestWithRetry(async (headers) => {
+        const response = await this.httpClient.delete<T>(path, {
+          headers,
+          params,
+          baseURL: this.marsHostBase(),
+        });
+        return response.data;
       });
-      return response.data;
-    });
+      this.logsService.add({ method: 'DELETE', path, status: 200, durationMs: Date.now() - t0, category: LogsService.categorize(path) });
+      return result;
+    } catch (err) {
+      const status = axios.isAxiosError(err) ? (err.response?.status ?? null) : null;
+      this.logsService.add({ method: 'DELETE', path, status, durationMs: Date.now() - t0, category: LogsService.categorize(path), error: (err as Error).message });
+      throw err;
+    }
   }
 
   /** Host root (no /api/v1 suffix) derived from the configured base URL. */

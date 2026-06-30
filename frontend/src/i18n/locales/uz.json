@@ -8,7 +8,8 @@
     "navigation": "Navigatsiya",
     "account": "Mars akkaunt",
     "logout": "Chiqish",
-    "attendance": "Davomat"
+    "attendance": "Davomat",
+    "logs": "API Loglar"
   },
   "login": {
     "title": "Mars IT Academy",
