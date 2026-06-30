@@ -23,6 +23,7 @@ import {
   getBranches,
   createTutorAccount,
   getAttendanceOverview,
+  getGroupsList,
   getGroupAttendance,
   markAttendance,
   getTutorBookings,
@@ -55,6 +56,7 @@ export const QUERY_KEYS = {
   tutorCandidates: ['tutors', 'candidates'] as const,
   branches: ['tutors', 'branches'] as const,
   attendanceOverview: ['attendance', 'overview'] as const,
+  groupsList: ['attendance', 'groups'] as const,
   groupAttendance: (id: number) => ['attendance', 'group', id] as const,
   tutorBookings: (id: number) => ['tutors', id, 'bookings'] as const,
   todayBookings: ['tutors', 'bookings-summary'] as const,
@@ -232,6 +234,14 @@ export const useRefreshAttendanceOverview = () => {
     },
   });
 };
+
+export const useGroupsList = () =>
+  useQuery({
+    queryKey: QUERY_KEYS.groupsList,
+    queryFn: getGroupsList,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
 export const useGroupAttendance = (id: number | null) =>
   useQuery({

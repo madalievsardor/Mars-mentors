@@ -278,6 +278,19 @@ export interface AttendanceOverview {
   totalUnmarked: number;
 }
 
+export interface GroupListItem {
+  groupId: number;
+  groupName: string;
+  mentorId: number;
+  mentorName: string;
+  branch: string;
+  category: string;
+  lessonStartTime: string;
+  studentsCount: number;
+  suspectVioletCount: number;
+  unmarkedCount: number;
+}
+
 // ──────────── Tutor work schedule (read-only) ────────────
 
 export type Weekday =

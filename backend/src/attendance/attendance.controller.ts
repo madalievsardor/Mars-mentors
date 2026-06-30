@@ -11,6 +11,7 @@ import { AttendanceService } from './attendance.service';
 import {
   AttendanceOverview,
   GroupAttendance,
+  GroupListItem,
   MarkResult,
 } from './attendance.types';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
@@ -18,6 +19,12 @@ import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 @Controller('api/attendance')
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
+
+  /** Flat list of all active groups with davomat issue counts. */
+  @Get('groups')
+  async getGroupsList(): Promise<GroupListItem[]> {
+    return this.attendanceService.getGroupsList();
+  }
 
   /**
    * Overview of recent attendance issues across every active group, grouped by

@@ -92,6 +92,20 @@ export interface MentorAttendanceIssues {
   groups: GroupIssueSummary[];
 }
 
+/** Flat group list item for the groups overview page. */
+export interface GroupListItem {
+  groupId: number;
+  groupName: string;
+  mentorId: number;
+  mentorName: string;
+  branch: string;
+  category: string;
+  lessonStartTime: string;
+  studentsCount: number;
+  suspectVioletCount: number;
+  unmarkedCount: number;
+}
+
 /** Result of marking a single (student, day) cell present/absent. */
 export interface MarkResult {
   ok: boolean;

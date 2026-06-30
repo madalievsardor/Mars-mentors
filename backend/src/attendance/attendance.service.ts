@@ -10,6 +10,7 @@ import {
   CellState,
   GroupAttendance,
   GroupIssueSummary,
+  GroupListItem,
   MarkResult,
   MentorAttendanceIssues,
   STATUS_TYPE_ACTIVE,
@@ -547,6 +548,43 @@ export class AttendanceService {
       );
       return null;
     }
+  }
+
+  /**
+   * Flat list of all active groups with davomat issue counts from the cached overview.
+   * Falls back to 0 counts when overview isn't loaded yet.
+   */
+  async getGroupsList(): Promise<GroupListItem[]> {
+    const groups = await this.marsService.getAllActiveGroups();
+
+    // Build issue lookup from cached overview (don't trigger a fresh scan)
+    const issueMap = new Map<number, { violet: number; unmarked: number }>();
+    if (this.overviewCache) {
+      for (const mentor of this.overviewCache.mentors) {
+        for (const g of mentor.groups) {
+          issueMap.set(g.groupId, {
+            violet: g.suspectVioletCount,
+            unmarked: g.unmarkedCount,
+          });
+        }
+      }
+    }
+
+    return groups.map((g) => {
+      const issues = issueMap.get(g.id) ?? { violet: 0, unmarked: 0 };
+      return {
+        groupId: g.id,
+        groupName: g.name,
+        mentorId: g.user.id,
+        mentorName: `${g.user.first_name} ${g.user.last_name}`.trim(),
+        branch: g.branch?.title ?? '',
+        category: g.category?.name ?? '',
+        lessonStartTime: g.lesson_start_time ?? '',
+        studentsCount: g.students_number,
+        suspectVioletCount: issues.violet,
+        unmarkedCount: issues.unmarked,
+      };
+    });
   }
 
   /** Run `fn` over `items` with at most `limit` promises in flight at once. */

@@ -23,6 +23,7 @@ import type {
   CreateTutorAccountResult,
   AttendanceOverview,
   GroupAttendance,
+  GroupListItem,
   AttendanceMarkPayload,
   AttendanceMarkResult,
   TutorBookingStats,
@@ -218,6 +219,11 @@ export const createTutorAccount = async (
     '/tutors/create-account',
     payload,
   );
+  return data;
+};
+
+export const getGroupsList = async (): Promise<GroupListItem[]> => {
+  const { data } = await api.get<GroupListItem[]>('/attendance/groups');
   return data;
 };
 

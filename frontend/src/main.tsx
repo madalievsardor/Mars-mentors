@@ -8,7 +8,7 @@ import Layout from './components/Layout'
 import DashboardPage from './pages/DashboardPage'
 import MentorsPage from './pages/MentorsPage'
 import InternsPage from './pages/InternsPage'
-import AttendancePage from './pages/AttendancePage'
+import GroupsPage from './pages/GroupsPage'
 import GroupAttendancePage from './pages/GroupAttendancePage'
 import TutorsPage from './pages/TutorsPage'
 import TutorDetailPage from './pages/TutorDetailPage'
@@ -46,7 +46,7 @@ function AppRoutes() {
         <Route path="mentors" element={<MentorsPage />} />
         <Route path="mentors/:id" element={<MentorDetailPage />} />
         <Route path="interns" element={<InternsPage />} />
-        <Route path="attendance" element={<AttendancePage />} />
+        <Route path="attendance" element={<GroupsPage />} />
         <Route path="attendance/group/:groupId" element={<GroupAttendancePage />} />
         <Route path="tutors" element={<TutorsPage />} />
         <Route path="tutors/:id" element={<TutorDetailPage />} />
