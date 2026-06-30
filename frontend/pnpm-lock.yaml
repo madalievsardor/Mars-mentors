@@ -38,6 +38,9 @@ importers:
       react-i18next:
         specifier: ^15.7.4
         version: 15.7.4(i18next@23.16.8)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3)
+      react-is:
+        specifier: ^19.2.7
+        version: 19.2.7
       react-router-dom:
         specifier: ^7.17.0
         version: 7.17.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
