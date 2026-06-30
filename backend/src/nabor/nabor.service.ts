@@ -24,43 +24,35 @@ export class NaborService {
   async getNaborGroups(): Promise<NaborGroup[]> {
     const result: NaborGroup[] = [];
     try {
-      let page = 1;
-      for (let guard = 0; guard < 30; guard++) {
-        const data = await this.mars.authedGet<{ page_count: number; groups: unknown[] }>(
-          '/api/v1/groups',
-          { status: 'nabor', page } as Record<string, string | number>,
-        );
-        const groups = data?.groups;
-        if (!Array.isArray(groups) || groups.length === 0) break;
+      const rows = await this.mars.authedGet<unknown[]>(
+        '/api/v2/groups',
+        { status_type: 1 } as Record<string, string | number>,
+      );
+      if (!Array.isArray(rows)) return result;
 
-        for (const g of groups) {
-          const row = g as Record<string, unknown>;
-          const user = (row['user'] as Record<string, unknown> | null) ?? {};
-          const branch = (row['branch'] as Record<string, unknown> | null) ?? {};
-          const category = (row['category'] as Record<string, unknown> | null) ?? {};
+      for (const g of rows) {
+        const row = g as Record<string, unknown>;
+        const user = (row['user'] as Record<string, unknown> | null) ?? {};
+        const branch = (row['branch'] as Record<string, unknown> | null) ?? {};
+        const category = (row['category'] as Record<string, unknown> | null) ?? {};
 
-          const firstName = String(user['first_name'] ?? '');
-          const lastName = String(user['last_name'] ?? '');
-          const mentor = (firstName + ' ' + lastName).trim() || null;
+        const firstName = String(user['first_name'] ?? '');
+        const lastName = String(user['last_name'] ?? '');
+        const mentor = (firstName + ' ' + lastName).trim() || null;
 
-          result.push({
-            id: Number(row['id']),
-            name: String(row['name'] ?? ''),
-            mentor,
-            mentorId: user['id'] != null ? Number(user['id']) : null,
-            branch: branch['title'] ? String(branch['title']) : null,
-            category: category['name'] ? String(category['name']) : null,
-            lessonStart: String(row['lesson_start_time'] ?? ''),
-            lessonEnd: String(row['lesson_end_time'] ?? ''),
-            days: Number(row['days'] ?? 0),
-            dateStarted: String(row['date_started'] ?? ''),
-            studentsCount: Number(row['students_number'] ?? 0),
-          });
-        }
-
-        const pageCount = Number((data as Record<string, unknown>)['page_count'] ?? 1);
-        if (page >= pageCount) break;
-        page++;
+        result.push({
+          id: Number(row['id']),
+          name: String(row['name'] ?? ''),
+          mentor,
+          mentorId: user['id'] != null ? Number(user['id']) : null,
+          branch: branch['title'] ? String(branch['title']) : null,
+          category: category['name'] ? String(category['name']) : null,
+          lessonStart: String(row['lesson_start_time'] ?? ''),
+          lessonEnd: String(row['lesson_end_time'] ?? ''),
+          days: Number(row['days'] ?? 0),
+          dateStarted: String(row['date_started'] ?? ''),
+          studentsCount: Number(row['students_number'] ?? 0),
+        });
       }
     } catch (err) {
       this.logger.error(`getNaborGroups: ${(err as Error).message}`);
