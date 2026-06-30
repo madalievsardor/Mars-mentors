@@ -15,6 +15,7 @@ import TutorDetailPage from './pages/TutorDetailPage'
 import NotificationsPage from './pages/NotificationsPage'
 import MentorDetailPage from './pages/MentorDetailPage'
 import LogsPage from './pages/LogsPage'
+import NaborPage from './pages/NaborPage'
 import LoginPage from './pages/LoginPage'
 import { AuthContext, useAuth, useAuthState } from './hooks/useAuth'
 
@@ -53,6 +54,7 @@ function AppRoutes() {
         <Route path="schedule" element={<Navigate to="/tutors" replace />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="logs" element={<LogsPage />} />
+        <Route path="nabor" element={<NaborPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

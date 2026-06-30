@@ -15,6 +15,7 @@ import { TutorsModule } from './tutors/tutors.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { AuthModule } from './auth/auth.module';
 import { LogsModule } from './logs/logs.module';
+import { NaborModule } from './nabor/nabor.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 
 @Module({
@@ -36,6 +37,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     InternsModule,
     TutorsModule,
     AttendanceModule,
+    NaborModule,
     AuthModule,
   ],
   providers: [
