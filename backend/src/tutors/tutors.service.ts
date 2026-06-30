@@ -704,14 +704,14 @@ export class TutorsService {
   async getTutorBookingStats(tutorId: number): Promise<TutorBookingStats> {
     const empty: TutorBookingStats = { tutorId, total: 0, byStatus: {}, recent: [] };
     try {
-      const pageSize = 100;
+      const pageSize = 10;
       let page = 1;
       const all: BookingEntry[] = [];
 
-      for (let guard = 0; guard < 20; guard++) {
+      for (let guard = 0; guard < 50; guard++) {
         const rows = await this.mars.authedGet<unknown[]>(
           '/api/v2/controls/booking/all',
-          { page, per_page: pageSize } as Record<string, number>,
+          { page } as Record<string, number>,
         );
         if (!Array.isArray(rows) || rows.length === 0) break;
 
