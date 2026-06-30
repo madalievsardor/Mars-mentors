@@ -111,7 +111,7 @@ export default function TutorDetailPage() {
             <div className="flex items-center gap-4 mt-1.5 flex-wrap text-slate-500 text-sm">
               <span className="flex items-center gap-1.5">
                 <Building2 size={14} />
-                {tutor.branch || 'вЂ"'}
+                {tutor.branch || '—'}
               </span>
               {hasRating && (
                 <span className="flex items-center gap-1.5 text-amber-300">
@@ -120,7 +120,7 @@ export default function TutorDetailPage() {
                     {tutor.avgRating!.toFixed(1)}
                   </span>
                   <span className="text-slate-600 tabular-nums">
-                    В· {tutor.totalRatings} {t('tutors.reviews')}
+                    · {tutor.totalRatings} {t('tutors.reviews')}
                   </span>
                 </span>
               )}
@@ -189,7 +189,7 @@ export default function TutorDetailPage() {
         <StatTile
           icon={CalendarCheck}
           label={t('tutors.workingDays')}
-          value={slotsData?.available ? String(slotsData.workingDays) : 'вЂ"'}
+          value={slotsData?.available ? String(slotsData.workingDays) : '—'}
           tone="indigo"
         />
         <StatTile
@@ -198,7 +198,7 @@ export default function TutorDetailPage() {
           value={
             slotsData?.available
               ? `${slotsData.totalHours} ${t('tutors.hoursShort')}`
-              : 'вЂ"'
+              : '—'
           }
           tone="emerald"
         />
@@ -208,7 +208,7 @@ export default function TutorDetailPage() {
           value={
             tutor.understandablePercent != null
               ? `${Math.round(tutor.understandablePercent)}%`
-              : 'вЂ"'
+              : '—'
           }
           tone="sky"
         />
@@ -218,7 +218,7 @@ export default function TutorDetailPage() {
           value={
             tutor.interestingPercent != null
               ? `${Math.round(tutor.interestingPercent)}%`
-              : 'вЂ"'
+              : '—'
           }
           tone="amber"
         />
@@ -282,7 +282,7 @@ export default function TutorDetailPage() {
                           className="inline-flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/25 rounded-lg px-2 py-0.5 text-xs font-semibold text-emerald-200 tabular-nums"
                         >
                           <Clock size={10} className="text-emerald-400" />
-                          {r.from}вЂ"{r.to}
+                          {r.from}–{r.to}
                         </span>
                       ))}
                     </div>
