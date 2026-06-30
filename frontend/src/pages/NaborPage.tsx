@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Users, Search, RefreshCw, Building2, Clock, BookOpen, UserCheck } from 'lucide-react'
-import { getNaborGroups, type NaborGroup } from '../api/client'
+import { getNaborGroups } from '../api/client'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 
