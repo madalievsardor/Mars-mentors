@@ -70,6 +70,12 @@ export class TutorsController {
     return this.tutorsService.getTutors();
   }
 
+  /** Today's booking count per tutor — single Mars API sweep, all tutors at once. */
+  @Get('bookings-summary')
+  async getBookingsSummary(): Promise<Record<number, number>> {
+    return this.tutorsService.getTodayBookingsSummary();
+  }
+
   /** Booking count + recent bookings for one tutor (from Mars API). */
   @Get(':id/bookings')
   async getTutorBookings(

@@ -25,7 +25,7 @@ import {
 import {
   useTutors,
   useTutorSlots,
-  useTutorBookings,
+  useTodayBookingsSummary,
   useRemoveTutor,
   useDeleteTutor,
   useBranches,
@@ -943,14 +943,15 @@ export function StatTile({
 function TutorTableRow({
   index,
   tutor,
+  todayBookings,
 }: {
   index: number
   tutor: TutorBrief
+  todayBookings: number | undefined
 }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { data: slots } = useTutorSlots(tutor.id)
-  const { data: bookings } = useTutorBookings(tutor.id)
   const slotsReady = slots?.available
   const hasRating = tutor.avgRating != null && tutor.totalRatings > 0
 
@@ -1005,12 +1006,12 @@ function TutorTableRow({
         )}
       </td>
       <td className="px-4 py-3 text-sm tabular-nums">
-        {bookings != null ? (
-          <span className={bookings.total > 0 ? 'text-indigo-300 font-semibold' : 'text-slate-600'}>
-            {bookings.total > 0 ? bookings.total : '—'}
+        {todayBookings != null ? (
+          <span className={todayBookings > 0 ? 'text-indigo-300 font-semibold' : 'text-slate-600'}>
+            {todayBookings > 0 ? todayBookings : '—'}
           </span>
         ) : (
-          <span className="text-slate-700">...</span>
+          <span className="text-slate-700">—</span>
         )}
       </td>
     </tr>
@@ -1020,6 +1021,7 @@ function TutorTableRow({
 export default function TutorsPage() {
   const { t } = useTranslation()
   const { data, isLoading, isError, error, refetch } = useTutors()
+  const { data: bookingSummary } = useTodayBookingsSummary()
   const queryClient = useQueryClient()
 
   const waking = !!data && !data.available
@@ -1204,7 +1206,7 @@ export default function TutorsPage() {
                 </thead>
                 <tbody>
                   {filtered.map((tu, i) => (
-                    <TutorTableRow key={tu.id} index={i + 1} tutor={tu} />
+                    <TutorTableRow key={tu.id} index={i + 1} tutor={tu} todayBookings={bookingSummary?.[tu.id]} />
                   ))}
                 </tbody>
               </table>

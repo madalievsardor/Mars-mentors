@@ -123,6 +123,11 @@ export const getTutorBookings = async (id: number): Promise<TutorBookingStats> =
   return data;
 };
 
+export const getTodayBookingsSummary = async (): Promise<Record<number, number>> => {
+  const { data } = await api.get<Record<number, number>>('/tutors/bookings-summary');
+  return data;
+};
+
 export const getApiLogs = async (category?: LogCategory): Promise<ApiLogEntry[]> => {
   const { data } = await api.get<ApiLogEntry[]>('/logs', {
     params: category ? { category } : undefined,

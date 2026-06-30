@@ -700,6 +700,34 @@ export class TutorsService {
    * (logged in full server-side) instead of bubbling up as a generic 500.
    */
 
+  /** Fetch today's booking count per tutor in a single Mars API sweep. Never throws. */
+  async getTodayBookingsSummary(): Promise<Record<number, number>> {
+    const today = new Date().toISOString().slice(0, 10);
+    const summary: Record<number, number> = {};
+    try {
+      let page = 1;
+      for (let guard = 0; guard < 50; guard++) {
+        const rows = await this.mars.authedGet<unknown[]>(
+          '/api/v2/controls/booking/all',
+          { page } as Record<string, number>,
+        );
+        if (!Array.isArray(rows) || rows.length === 0) break;
+        for (const r of rows) {
+          const row = r as Record<string, unknown>;
+          const dateTime = String(row['dateTime'] ?? '');
+          if (!dateTime.startsWith(today)) continue;
+          const userId = Number(row['user_id']);
+          summary[userId] = (summary[userId] ?? 0) + 1;
+        }
+        if (rows.length < 10) break;
+        page++;
+      }
+    } catch (err) {
+      this.logger.warn(`getTodayBookingsSummary: ${(err as Error).message}`);
+    }
+    return summary;
+  }
+
   /** Booking stats for one tutor from Mars API (`/api/v2/controls/booking/all`). Never throws. */
   async getTutorBookingStats(tutorId: number): Promise<TutorBookingStats> {
     const empty: TutorBookingStats = { tutorId, total: 0, byStatus: {}, recent: [] };

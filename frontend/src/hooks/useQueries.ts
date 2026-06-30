@@ -26,6 +26,7 @@ import {
   getGroupAttendance,
   markAttendance,
   getTutorBookings,
+  getTodayBookingsSummary,
   getApiLogs,
 } from '../api/client';
 import type {
@@ -56,6 +57,7 @@ export const QUERY_KEYS = {
   attendanceOverview: ['attendance', 'overview'] as const,
   groupAttendance: (id: number) => ['attendance', 'group', id] as const,
   tutorBookings: (id: number) => ['tutors', id, 'bookings'] as const,
+  todayBookings: ['tutors', 'bookings-summary'] as const,
   logs: (category?: LogCategory) => ['logs', category ?? 'all'] as const,
 };
 
@@ -390,6 +392,13 @@ export const useTutorBookings = (id: number | null) =>
     queryKey: QUERY_KEYS.tutorBookings(id ?? 0),
     queryFn: () => getTutorBookings(id!),
     enabled: id !== null,
+    staleTime: 5 * 60 * 1000,
+  });
+
+export const useTodayBookingsSummary = () =>
+  useQuery({
+    queryKey: QUERY_KEYS.todayBookings,
+    queryFn: getTodayBookingsSummary,
     staleTime: 5 * 60 * 1000,
   });
 
