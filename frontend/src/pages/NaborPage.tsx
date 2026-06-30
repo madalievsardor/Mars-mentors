@@ -1,24 +1,9 @@
 import { useState, useMemo } from 'react'
-import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Users, Search, RefreshCw, Building2, Clock, BookOpen, UserCheck } from 'lucide-react'
-import { api } from '../api/client'
+import { getNaborGroups, type NaborGroup } from '../api/client'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
-
-interface NaborGroup {
-  id: number
-  name: string
-  mentor: string | null
-  mentorId: number | null
-  branch: string | null
-  category: string | null
-  lessonStart: string
-  lessonEnd: string
-  days: number
-  dateStarted: string
-  studentsCount: number
-}
 
 const DAYS_LABEL: Record<number, string> = {
   1: 'Du-Chor-Jum',
@@ -28,16 +13,12 @@ const DAYS_LABEL: Record<number, string> = {
 function useNaborGroups() {
   return useQuery({
     queryKey: ['nabor'],
-    queryFn: async (): Promise<NaborGroup[]> => {
-      const { data } = await api.get<NaborGroup[]>('/nabor')
-      return data
-    },
+    queryFn: getNaborGroups,
     staleTime: 3 * 60 * 1000,
   })
 }
 
 export default function NaborPage() {
-  const { t } = useTranslation()
   const { data, isLoading, isError, refetch, isFetching } = useNaborGroups()
   const [search, setSearch] = useState('')
   const [branchFilter, setBranchFilter] = useState('')

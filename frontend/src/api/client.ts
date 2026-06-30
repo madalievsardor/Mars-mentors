@@ -128,6 +128,25 @@ export const getTodayBookingsSummary = async (): Promise<Record<number, number>>
   return data;
 };
 
+export interface NaborGroup {
+  id: number
+  name: string
+  mentor: string | null
+  mentorId: number | null
+  branch: string | null
+  category: string | null
+  lessonStart: string
+  lessonEnd: string
+  days: number
+  dateStarted: string
+  studentsCount: number
+}
+
+export const getNaborGroups = async (): Promise<NaborGroup[]> => {
+  const { data } = await api.get<NaborGroup[]>('/nabor')
+  return data
+};
+
 export const getApiLogs = async (category?: LogCategory): Promise<ApiLogEntry[]> => {
   const { data } = await api.get<ApiLogEntry[]>('/logs', {
     params: category ? { category } : undefined,
