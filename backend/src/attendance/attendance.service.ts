@@ -307,7 +307,7 @@ export class AttendanceService {
       const byDate = new Map<string, number>();
       for (const a of s.attendances ?? []) {
         if (a.attend_date && typeof a.status === 'number') {
-          byDate.set(a.attend_date, a.status);
+          byDate.set(String(a.attend_date).slice(0, 10), a.status);
         }
       }
       statusByStudentDate.set(id, byDate);
