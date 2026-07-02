@@ -81,9 +81,8 @@ export default function GroupAttendancePage() {
   const markMut = useMarkAttendance()
   const [editing, setEditing] = useState<EditingCell | null>(null)
 
-  // Kelajakdagi dars kunlarini ko'rsatma — faqat bugun va o'tgan kunlar
   const today = new Date().toISOString().slice(0, 10)
-  const visibleDays = data ? data.days.filter((d) => d.date <= today) : []
+  const visibleDays = data ? data.days : []
 
   const openEditor = (
     e: React.MouseEvent,
@@ -263,7 +262,7 @@ export default function GroupAttendancePage() {
                           )}
                         </div>
                       </td>
-                      {s.cells.filter((c) => c.date <= today).map((c, ci) => (
+                      {s.cells.map((c, ci) => (
                         <td
                           key={c.date}
                           className={`px-0 py-0.5 ${
