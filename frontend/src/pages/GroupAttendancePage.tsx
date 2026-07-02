@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, CalendarCheck, Check, X, Minus, Snowflake, Clock, MapPin, BookOpen, Calendar, User } from 'lucide-react'
@@ -6,6 +6,30 @@ import { useGroupAttendance, useMarkAttendance } from '../hooks/useQueries'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import type { CellState } from '../types'
+
+// ──────────── month tab helpers ────────────
+
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+function fmtTab(year: number, month: number): string {
+  return `${MONTH_ABBR[month - 1]} ${String(year).slice(2)}`
+}
+
+/** Generates a list of {year, month} objects: 12 months back + current + 2 ahead. */
+function generateMonthTabs(): { year: number; month: number }[] {
+  const now = new Date()
+  const cy = now.getFullYear()
+  const cm = now.getMonth() + 1 // 1-based
+  const tabs: { year: number; month: number }[] = []
+  for (let offset = -12; offset <= 2; offset++) {
+    let m = cm + offset
+    let y = cy
+    while (m <= 0) { m += 12; y-- }
+    while (m > 12) { m -= 12; y++ }
+    tabs.push({ year: y, month: m })
+  }
+  return tabs
+}
 
 interface EditingCell {
   studentId: number
@@ -75,8 +99,19 @@ export default function GroupAttendancePage() {
   const navigate = useNavigate()
   const { groupId } = useParams<{ groupId: string }>()
   const id = Number(groupId)
+
+  // Month selector state — default to the current calendar month.
+  const now = new Date()
+  const [selectedMonth, setSelectedMonth] = useState<{ year: number; month: number }>({
+    year: now.getFullYear(),
+    month: now.getMonth() + 1,
+  })
+  const monthTabs = useMemo(() => generateMonthTabs(), [])
+
   const { data, isLoading, isError, refetch } = useGroupAttendance(
     Number.isFinite(id) && id > 0 ? id : null,
+    selectedMonth.year,
+    selectedMonth.month,
   )
   const markMut = useMarkAttendance()
   const [editing, setEditing] = useState<EditingCell | null>(null)
@@ -200,6 +235,31 @@ export default function GroupAttendancePage() {
               )}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Month selector tabs */}
+      <div className="bg-[#161b27] border border-white/[0.07] rounded-2xl px-4 py-3">
+        <div className="flex overflow-x-auto gap-1 pb-0.5 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
+          {monthTabs.map(({ year, month }) => {
+            const isActive = year === selectedMonth.year && month === selectedMonth.month
+            const isCurrent = year === now.getFullYear() && month === now.getMonth() + 1
+            return (
+              <button
+                key={`${year}-${month}`}
+                onClick={() => setSelectedMonth({ year, month })}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
+                  isActive
+                    ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                    : isCurrent
+                      ? 'bg-white/[0.06] text-slate-300 border border-white/[0.12] hover:bg-white/[0.10]'
+                      : 'bg-transparent text-slate-500 border border-transparent hover:text-slate-300 hover:bg-white/[0.05]'
+                }`}
+              >
+                {fmtTab(year, month)}
+              </button>
+            )
+          })}
         </div>
       </div>
 

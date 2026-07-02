@@ -238,9 +238,12 @@ export const getAttendanceOverview = async (
 
 export const getGroupAttendance = async (
   groupId: number,
+  year?: number,
+  month?: number,
 ): Promise<GroupAttendance> => {
   const { data } = await api.get<GroupAttendance>(
     `/attendance/group/${groupId}`,
+    { params: year != null && month != null ? { year, month } : undefined },
   );
   return data;
 };

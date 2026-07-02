@@ -119,11 +119,23 @@ export class AttendanceService {
     return { from: this.fmt(from), till: this.fmt(till) };
   }
 
+  /**
+   * Whole calendar month for a specific year + month (1-based).
+   * Used when the frontend selects a historical or future month via the tab bar.
+   */
+  private monthWindowFor(year: number, month: number): { from: string; till: string } {
+    const from = new Date(Date.UTC(year, month - 1, 1));
+    const till = new Date(Date.UTC(year, month, 0)); // day 0 = last day of previous month
+    return { from: this.fmt(from), till: this.fmt(till) };
+  }
+
   // ──────────── single group ────────────
 
   /** Normalized attendance grid for one group (drill-down view). */
-  async getGroupAttendance(groupId: number): Promise<GroupAttendance> {
-    const { from, till } = this.monthWindow();
+  async getGroupAttendance(groupId: number, year?: number, month?: number): Promise<GroupAttendance> {
+    const { from, till } = (year != null && month != null)
+      ? this.monthWindowFor(year, month)
+      : this.monthWindow();
 
     // Fetch attendance data and group detail in parallel for efficiency.
     // getGroupDetail returns null on error — we degrade gracefully.

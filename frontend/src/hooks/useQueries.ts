@@ -57,7 +57,7 @@ export const QUERY_KEYS = {
   branches: ['tutors', 'branches'] as const,
   attendanceOverview: ['attendance', 'overview'] as const,
   groupsList: ['attendance', 'groups'] as const,
-  groupAttendance: (id: number) => ['attendance', 'group', id] as const,
+  groupAttendance: (id: number, year?: number, month?: number) => ['attendance', 'group', id, year, month] as const,
   tutorBookings: (id: number) => ['tutors', id, 'bookings'] as const,
   todayBookings: ['tutors', 'bookings-summary'] as const,
   logs: (category?: LogCategory) => ['logs', category ?? 'all'] as const,
@@ -243,10 +243,10 @@ export const useGroupsList = () =>
     refetchOnWindowFocus: false,
   });
 
-export const useGroupAttendance = (id: number | null) =>
+export const useGroupAttendance = (id: number | null, year?: number, month?: number) =>
   useQuery({
-    queryKey: QUERY_KEYS.groupAttendance(id ?? 0),
-    queryFn: () => getGroupAttendance(id!),
+    queryKey: QUERY_KEYS.groupAttendance(id ?? 0, year, month),
+    queryFn: () => getGroupAttendance(id!, year, month),
     enabled: id !== null,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -261,44 +261,52 @@ export const useMarkAttendance = () => {
     // written (the value we POSTed), so the cache stays truthful — no need to
     // immediately refetch the group (a refetch could even briefly read stale Mars
     // data). The cross-group overview counts are refreshed separately.
+    //
+    // The query key now includes year/month (from the month-selector tabs), so we
+    // use a partial-prefix match to locate the active cached entry rather than
+    // reconstructing the full key in the mutation.
     onMutate: async (vars) => {
-      const key = QUERY_KEYS.groupAttendance(vars.groupId)
-      await queryClient.cancelQueries({ queryKey: key })
-      const previous = queryClient.getQueryData<GroupAttendance>(key)
-      if (previous) {
-        const violetDay =
-          previous.days.find((d) => d.date === vars.date)?.isVioletDay ?? false
-        // status 1 → present; status 0 → keep the column's violet tint if it's a
-        // flagged violet day, otherwise a plain (real) absence.
-        const nextState: CellState =
-          vars.status === 1 ? 'present' : violetDay ? 'violet' : 'absent'
+      const prefixKey = ['attendance', 'group', vars.groupId] as const
+      await queryClient.cancelQueries({ queryKey: prefixKey })
 
-        let suspectVioletCount = previous.suspectVioletCount
-        let unmarkedCount = previous.unmarkedCount
-        const students = previous.students.map((s) => {
-          if (s.studentId !== vars.studentId || s.frozen) return s
-          return {
-            ...s,
-            cells: s.cells.map((c) => {
-              if (c.date !== vars.date) return c
-              // Keep the header issue counts roughly in sync as the cell changes.
-              if (c.state === 'violet' && nextState !== 'violet') {
-                suspectVioletCount = Math.max(0, suspectVioletCount - 1)
-              }
-              if (c.state === 'unmarked') {
-                unmarkedCount = Math.max(0, unmarkedCount - 1)
-              }
-              return { ...c, state: nextState }
-            }),
-          }
-        })
-        queryClient.setQueryData<GroupAttendance>(key, {
-          ...previous,
-          students,
-          suspectVioletCount,
-          unmarkedCount,
-        })
-      }
+      // Find the single cached entry for this group (user only has one month open).
+      const allGroupQueries = queryClient.getQueriesData<GroupAttendance>({ queryKey: prefixKey })
+      const [key, previous] = allGroupQueries[0] ?? [prefixKey as unknown as readonly unknown[], undefined]
+
+      if (!previous) return { previous: undefined, key }
+
+      const violetDay =
+        previous.days.find((d) => d.date === vars.date)?.isVioletDay ?? false
+      // status 1 → present; status 0 → keep the column's violet tint if it's a
+      // flagged violet day, otherwise a plain (real) absence.
+      const nextState: CellState =
+        vars.status === 1 ? 'present' : violetDay ? 'violet' : 'absent'
+
+      let suspectVioletCount = previous.suspectVioletCount
+      let unmarkedCount = previous.unmarkedCount
+      const students = previous.students.map((s) => {
+        if (s.studentId !== vars.studentId || s.frozen) return s
+        return {
+          ...s,
+          cells: s.cells.map((c) => {
+            if (c.date !== vars.date) return c
+            // Keep the header issue counts roughly in sync as the cell changes.
+            if (c.state === 'violet' && nextState !== 'violet') {
+              suspectVioletCount = Math.max(0, suspectVioletCount - 1)
+            }
+            if (c.state === 'unmarked') {
+              unmarkedCount = Math.max(0, unmarkedCount - 1)
+            }
+            return { ...c, state: nextState }
+          }),
+        }
+      })
+      queryClient.setQueryData<GroupAttendance>(key, {
+        ...previous,
+        students,
+        suspectVioletCount,
+        unmarkedCount,
+      })
       return { previous, key }
     },
     onError: (_err, _vars, ctx) => {

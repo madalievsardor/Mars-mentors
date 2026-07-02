@@ -37,12 +37,20 @@ export class AttendanceController {
     return this.attendanceService.getOverview(refresh === '1');
   }
 
-  /** Full normalized attendance grid for one group (drill-down). */
+  /**
+   * Full normalized attendance grid for one group (drill-down).
+   * Optional ?year=2026&month=7 query params select a specific calendar month;
+   * when omitted the current month is used (backwards-compatible behaviour).
+   */
   @Get('group/:groupId')
   async getGroupAttendance(
     @Param('groupId', ParseIntPipe) groupId: number,
+    @Query('year') year?: string,
+    @Query('month') month?: string,
   ): Promise<GroupAttendance> {
-    return this.attendanceService.getGroupAttendance(groupId);
+    const y = year ? parseInt(year, 10) : undefined;
+    const m = month ? parseInt(month, 10) : undefined;
+    return this.attendanceService.getGroupAttendance(groupId, y, m);
   }
 
   /**
