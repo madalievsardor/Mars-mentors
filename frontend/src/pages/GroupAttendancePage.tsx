@@ -81,7 +81,6 @@ export default function GroupAttendancePage() {
   const markMut = useMarkAttendance()
   const [editing, setEditing] = useState<EditingCell | null>(null)
 
-  const today = new Date().toISOString().slice(0, 10)
   const visibleDays = data ? data.days : []
 
   const openEditor = (
